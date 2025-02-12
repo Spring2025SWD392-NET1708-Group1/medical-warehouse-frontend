@@ -4,17 +4,17 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
 const Hero = ({
-  heading = "Blocks built with Shadcn & Tailwind",
-  description = "Finely crafted components built with React, Tailwind and Shadcn UI. Developers can copy and paste these blocks directly into their project.",
+  heading = "MediSupply Hub",
+  description = "MediSupply Hub simplifies medical inventory management with real-time tracking and optimization. Keep your supplies organized, reduce waste, and ensure seamless operations effortlessly.",
 
   buttons = {
     primary: {
       text: "Sign Up",
-      url: "https://www.shadcnblocks.com"
+      url: "/signup"
     },
     secondary: {
       text: "Get Started",
-      url: "https://www.shadcnblocks.com"
+      url: "/about"
     }
   },
 
@@ -94,7 +94,7 @@ const Hero = ({
         </div>
         <div className="flex bg-muted">
           <img
-            src="https://www.shadcnblocks.com/images/block/placeholder-1.svg"
+            src="https://unblast.com/wp-content/uploads/2020/10/Pharmacist-Vector-Illustration.jpg"
             alt="placeholder hero"
             className="max-h-[600px] w-full rounded-md object-cover lg:max-h-[800px]"
           />
