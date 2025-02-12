@@ -1,16 +1,20 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import { Header } from './components/Header'
-import { Hero } from './components/Home/Hero'
-
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import CommonLayout from './layouts/CommonLayout'
+import Homepage from "./pages/common/Homepage";
 function App() {
 
   return (
     <>
-      <Header />
-      <Hero />
+      <Router>
+        <Routes>
+          <Route element={<CommonLayout />}>
+            <Route index path="/" element={<Homepage />} />
+            {/* <Route path="/login" element={<Login />} /> */}
+            {/* <Route path="/sign-up" element={<SignUp />} /> */}
+            {/* <Route path="/about" element={<AboutUsPage />} /> */}
+          </Route>
+        </Routes>
+      </Router>
     </>
   )
 }
