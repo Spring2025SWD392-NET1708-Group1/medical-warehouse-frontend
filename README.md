@@ -19,58 +19,42 @@ MediSupply Hub streamlines medical inventory with real-time tracking, reducing w
 
 ## Tech
 
-Dillinger uses a number of open source projects to work properly:
+MediSuply uses a number of open source projects to work properly:
 
-- [AngularJS] - HTML enhanced for web apps!
-- [Ace Editor] - awesome web-based text editor
-- [markdown-it] - Markdown parser done right. Fast and easy to extend.
-- [Twitter Bootstrap] - great UI boilerplate for modern web apps
-- [node.js] - evented I/O for the backend
-- [Express] - fast node.js network app framework [@tjholowaychuk]
-- [Gulp] - the streaming build system
-- [Breakdance](https://breakdance.github.io/breakdance/) - HTML
-to Markdown converter
-- [jQuery] - duh
+- >NET SDK 8.0
+- >REACTJS 19
+- >MYSQL 8.0
 
 And of course Dillinger itself is open source with a [public repository][dill]
  on GitHub.
 
 ## Installation
 
-Dillinger requires [Node.js](https://nodejs.org/) v10+ to run.
+MediSupply  requires [Node.js](https://nodejs.org/) v20+ to run.
 
 Install the dependencies and devDependencies and start the server.
 
 ```sh
-cd dillinger
+cd medical-warehouse-frontend
 npm i
-node app
+npm run dev
 ```
 
-For production environments...
 
-```sh
-npm install --production
-NODE_ENV=production node app
-```
+## Team Management
 
-## Plugins
-
-Dillinger is currently extended with the following plugins.
+Below is what my team use to track the team progress on developing this system
 Instructions on how to use them in your own application are linked below.
 
 | Plugin | README |
 | ------ | ------ |
-| Dropbox | [plugins/dropbox/README.md][PlDb] |
+| Jira | [plugins/dropbox/README.md][PlDb] |
 | GitHub | [plugins/github/README.md][PlGh] |
 | Google Drive | [plugins/googledrive/README.md][PlGd] |
-| OneDrive | [plugins/onedrive/README.md][PlOd] |
-| Medium | [plugins/medium/README.md][PlMe] |
-| Google Analytics | [plugins/googleanalytics/README.md][PlGa] |
 
-## Development
+## Deployment
 
-Want to contribute? Great!
+MonsterAPI with free hosting for database and API document
 
 Dillinger uses Gulp + Webpack for fast developing.
 Make a change in your file and instantaneously see your updates!
