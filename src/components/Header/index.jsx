@@ -25,8 +25,8 @@ import {
 
 const Header = ({
   logo = {
-    url: "https://www.shadcnblocks.com",
-    src: "https://www.shadcnblocks.com/images/block/block-1.svg",
+    url: "https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716",
+    src: "https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716",
     alt: "logo",
     title: "MediSupply Hub"
   },

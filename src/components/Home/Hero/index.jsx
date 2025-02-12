@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 
 const Hero = ({
   heading = "MediSupply Hub",
-  description = "MediSupply Hub simplifies medical inventory management with real-time tracking and optimization. Keep your supplies organized, reduce waste, and ensure seamless operations effortlessly.",
+  description = "MediSupply Hub streamlines medical inventory with real-time tracking, reducing waste and ensuring seamless operations.",
 
   buttons = {
     primary: {
@@ -45,7 +45,7 @@ const Hero = ({
   }
 }) => {
   return (
-    <section className="py-32">
+    <section className="py-32 px-10">
       <div className="container grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
         <div className="mx-auto flex flex-col items-center text-center md:ml-auto lg:max-w-3xl lg:items-start lg:text-left">
           <h1 className="my-6 text-pretty text-4xl font-bold lg:text-6xl xl:text-7xl">
