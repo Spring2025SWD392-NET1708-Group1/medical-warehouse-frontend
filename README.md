@@ -51,6 +51,9 @@ Instructions on how to use them in your own application are linked below.
 | GitHub | [plugins/github/README.md][PlGh] |
 | Google Drive | [plugins/googledrive/README.md][PlGd] |
 
+Template 2 : https://docs.google.com/document/d/1NkkHJf1W45gTih428Ct4ECaAiD7-9lpBTjk3OSUJaCo/edit?tab=t.0
+Template 3 : https://docs.google.com/document/d/1D21xmsQVonFrzpcg9N5A6nqA1CDeFfda9T6YkSneAS8/edit?tab=t.0
+
 ## Deployment
 
 MonsterAPI with free hosting for database and API document
