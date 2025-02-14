@@ -40,16 +40,19 @@ npm run dev
 ```
 
 
-## Team Management
+## Project Management
 
 Below is what my team use to track the team progress on developing this system
-Instructions on how to use them in your own application are linked below.
 
-| Plugin | README |
-| ------ | ------ |
-| Jira | [plugins/dropbox/README.md][PlDb] |
-| GitHub | [plugins/github/README.md][PlGh] |
-| Google Drive | [plugins/googledrive/README.md][PlGd] |
+Template 2 : https://docs.google.com/document/d/1NkkHJf1W45gTih428Ct4ECaAiD7-9lpBTjk3OSUJaCo/edit?tab=t.0
+
+Template 3 : https://docs.google.com/document/d/1D21xmsQVonFrzpcg9N5A6nqA1CDeFfda9T6YkSneAS8/edit?tab=t.0
+
+Presentation Link: https://www.canva.com/design/DAGeybuQav8/gnaeRQQZN53_qfQFsXtRIA/edit
+
+Documents: https://drive.google.com/drive/folders/1X09CXQ6EU3UlyyW112barWVHBRx6heta
+
+Task Management: https://github.com/orgs/Spring2025SWD392-NET1708-Group1/projects/1/views/7
 
 ## Deployment
 
