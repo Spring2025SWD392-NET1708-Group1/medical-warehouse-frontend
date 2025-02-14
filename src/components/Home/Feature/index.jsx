@@ -4,45 +4,41 @@ const feature = [
   {
     title: "Quality",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quasi necessitatibus, culpa at vitae molestias tenetur explicabo.",
+      "Uncompromising Quality for Optimal Medical Supply Management.",
     icon: <ZoomIn className="size-6" />,
   },
   {
     title: "Innovation",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quasi necessitatibus, culpa at vitae molestias tenetur explicabo.",
+      "Cutting-Edge Technology to Streamline Your Warehouse Operations.",
     icon: <Zap className="size-6" />,
   },
   {
     title: "Customer Support",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quasi necessitatibus, culpa at vitae molestias tenetur explicabo.",
+      "Dedicated Support, Because Your Success is Our Priority.",
     icon: <MessagesSquare className="size-6" />,
   },
   {
     title: "Reliability",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quasi necessitatibus, culpa at vitae molestias tenetur explicabo.",
+      "A Secure and Dependable System You Can Trust, Every Time.",
     icon: <Infinity className="size-6" />,
   },
 ];
 
 const Feature = () => {
   return (
-    <section className="py-32">
+    <section className="px-20">
       <div className="container">
         <div className="flex w-full flex-col items-center">
           <div className="flex flex-col items-center space-y-4 text-center sm:space-y-6 md:max-w-3xl md:text-center">
             <p className="text-sm text-muted-foreground">WHY WE ARE UNIQUE</p>
             <h2 className="text-3xl font-medium md:text-5xl">
-              Bringing the best to you by the best in the industry
+              Delivering Excellence: Trusted by Industry Experts
             </h2>
 
             <p className="text-muted-foreground md:max-w-2xl">
-              Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quasi
-              necessitatibus, culpa at vitae molestias tenetur explicabo.
-              Voluptatum amet architecto suscipit pariatur eligendi repellendus
-              mollitia dolore unde sint?
             </p>
           </div>
         </div>

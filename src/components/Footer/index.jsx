@@ -13,7 +13,7 @@ const sections = [
   {
     title: "Company",
     links: [
-      { name: "About", href: "#" },
+      { name: "About", href: "/about" },
       { name: "Team", href: "#" },
       { name: "Blog", href: "#" },
       { name: "Careers", href: "#" }
@@ -32,7 +32,7 @@ const sections = [
 
 const Footer = () => {
   return (
-    <section className="py-32">
+    <section className="py-32 px-20">
       <div className="container">
         <footer>
           <div className="flex flex-col items-center justify-between gap-10 text-center lg:flex-row lg:text-left">
@@ -40,15 +40,14 @@ const Footer = () => {
               <div>
                 <span className="flex items-center justify-center gap-4 lg:justify-start">
                   <img
-                    src="https://shadcnblocks.com/images/block/block-1.svg"
+                    src="https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716"
                     alt="logo"
-                    className="h-11"
+                    className="h-20 w-20"
                   />
-                  <p className="text-3xl font-semibold">Shadcnblocks</p>
+                  <p className="text-2xl font-semibold">MediSupply Hub</p>
                 </span>
                 <p className="mt-6 text-sm text-muted-foreground">
-                  A collection of 100+ responsive HTML templates for your
-                  startup business or side project.
+                  MediSupply Hub streamlines medical inventory with real-time tracking, reducing waste and ensuring seamless operations.
                 </p>
               </div>
               <ul className="flex items-center space-x-6 text-muted-foreground">
@@ -93,7 +92,7 @@ const Footer = () => {
             </div>
           </div>
           <div className="mt-20 flex flex-col justify-between gap-4 border-t pt-8 text-center text-sm font-medium text-muted-foreground lg:flex-row lg:items-center lg:text-left">
-            <p>© 2024 Shadcnblocks. All rights reserved.</p>
+            <p>© 2025 MediSupply Hub. All rights reserved.</p>
             <ul className="flex justify-center gap-4 lg:justify-start">
               <li className="hover:text-primary">
                 <a href="#"> Terms and Conditions</a>

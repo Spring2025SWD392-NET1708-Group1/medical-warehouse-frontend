@@ -117,12 +117,12 @@ const Header = ({
   }
 }) => {
   return (
-    <section className="py-4">
+    <section className="px-20 py-2">
       <div className="container">
         <nav className="hidden justify-between lg:flex">
           <div className="flex items-center gap-6">
             <a href={logo.url} className="flex items-center gap-2">
-              <img src={logo.src} className="w-8" alt={logo.alt} />
+              <img src={logo.src} className="w-15" alt={logo.alt} />
               <span className="text-lg font-semibold">{logo.title}</span>
             </a>
             <div className="flex items-center">

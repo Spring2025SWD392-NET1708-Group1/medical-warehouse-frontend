@@ -45,7 +45,7 @@ const Hero = ({
   }
 }) => {
   return (
-    <section className="py-32 px-10">
+    <section className="py-32 px-15">
       <div className="container grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
         <div className="mx-auto flex flex-col items-center text-center md:ml-auto lg:max-w-3xl lg:items-start lg:text-left">
           <h1 className="my-6 text-pretty text-4xl font-bold lg:text-6xl xl:text-7xl">

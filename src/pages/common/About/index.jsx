@@ -1,41 +1,36 @@
 import { CircleArrowRight, Files, Settings } from "lucide-react"
 const About = () => {
   return (
-    <section className="py-32">
+    <section className="py-32 px-20">
       <div className="container flex flex-col gap-28">
         <div className="flex flex-col gap-7">
           <h1 className="text-4xl font-semibold lg:text-7xl">
             Bringing the power of software to everyone
           </h1>
           <p className="max-w-xl text-lg">
-            Stacker makes it easy to build customer portals, CRMs, internal
-            tools, and other business applications for your team. In minutes,
-            not months.
+            At MediSupply, we revolutionize medical warehouse management with cutting-edge technology, precision, and reliability. Our mission is to empower healthcare providers with a seamless, efficient, and secure inventory management system.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           <img
-            src="https://shadcnblocks.com/images/block/placeholder-1.svg"
+            src="https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716"
             alt="placeholder"
             className="size-full max-h-96 rounded-2xl object-cover"
           />
           <div className="flex flex-col justify-between gap-10 rounded-2xl bg-muted p-10">
             <p className="text-sm text-muted-foreground">OUR MISSION</p>
             <p className="text-lg font-medium">
-              We believe that building software should be insanely easy. That
-              everyone should have the freedom to create the tools they need,
-              without any developers, designers or drama.
+              We envision a future where medical supply chains are optimized, reducing waste, improving efficiency, and ensuring that essential medical products reach those in need—when they need them the most.
             </p>
           </div>
         </div>
         <div className="flex flex-col gap-6 md:gap-20">
           <div className="max-w-xl">
             <h2 className="mb-2.5 text-3xl font-semibold md:text-5xl">
-              We make creating software ridiculously easy
+              Why Choose Us?
             </h2>
             <p className="text-muted-foreground">
-              We aim to help empower 1,000,000 teams to create their own
-              software. Here is how we plan on doing it.
+              Join us in transforming the way medical warehouses operate, making healthcare logistics smarter, faster, and more reliable.
             </p>
           </div>
           <div className="grid gap-10 md:grid-cols-3">
@@ -44,12 +39,10 @@ const About = () => {
                 <Files className="size-5" />
               </div>
               <h3 className="mb-3 mt-2 text-lg font-semibold">
-                Being radically open
+                Unmatched Quality
               </h3>
               <p className="text-muted-foreground">
-                We believe there’s no room for big egos and there’s always time
-                to help each other. We strive to give and receive feedback,
-                ideas, perspectives
+                We prioritize accuracy and compliance, ensuring that your inventory is managed with the highest standards.
               </p>
             </div>
             <div className="flex flex-col">
@@ -57,12 +50,10 @@ const About = () => {
                 <CircleArrowRight className="size-5" />
               </div>
               <h3 className="mb-3 mt-2 text-lg font-semibold">
-                Moving the needle
+                Innovative Solutions
               </h3>
               <p className="text-muted-foreground">
-                Boldly, bravely and with clear aims. We seek out the big
-                opportunities and double down on the most important things to
-                work on.
+                Our system integrates the latest technology to automate and simplify
               </p>
             </div>
             <div className="flex flex-col">
@@ -70,11 +61,10 @@ const About = () => {
                 <Settings className="size-5" />
               </div>
               <h3 className="mb-3 mt-2 text-lg font-semibold">
-                Optimizing for empowerment
+                Reliable Performance
               </h3>
               <p className="text-muted-foreground">
-                We believe that everyone should be empowered to do whatever they
-                think is in the company&apos;s best interests.
+                A secure, scalable, and efficient platform you can trust 24/7.
               </p>
             </div>
           </div>

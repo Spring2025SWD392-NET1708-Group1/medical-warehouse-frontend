@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 const Signup = ({
-  heading = "Shadcnblocks.com",
+  heading = "MediSupplyHub.com",
   subheading = "Sign up for free.",
 
   logo = {
-    url: "https://www.shadcnblocks.com",
-    src: "https://shadcnblocks.com/images/block/block-1.svg",
+    url: "https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716",
+    src: "https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716",
     alt: "logo"
   },
 
@@ -18,7 +18,7 @@ const Signup = ({
   loginUrl = "#"
 }) => {
   return (
-    <section className="py-32">
+    <section className="py-32 px-80">
       <div className="container">
         <div className="flex flex-col gap-4">
           <div className="mx-auto w-full max-w-sm rounded-md p-6 shadow">
@@ -27,7 +27,7 @@ const Signup = ({
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="mb-7 h-10 w-auto"
+                  className="h-20 w-20"
                 />
               </a>
               <p className="mb-2 text-2xl font-bold">{heading}</p>
