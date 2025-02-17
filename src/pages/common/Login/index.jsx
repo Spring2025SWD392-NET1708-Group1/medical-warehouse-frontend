@@ -1,5 +1,5 @@
 import { FcGoogle } from "react-icons/fc"
-
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -58,9 +58,9 @@ const Login = ({
                       Remember me
                     </label>
                   </div>
-                  <a href="#" className="text-sm text-primary hover:underline">
+                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                     Forgot password
-                  </a>
+                  </Link>
                 </div>
                 <Button type="submit" className="mt-2 w-full">
                   {loginText}
