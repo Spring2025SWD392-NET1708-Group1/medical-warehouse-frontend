@@ -1,9 +1,12 @@
-
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const ForgotPassword = ({
+
+    
+
     heading = "MeddiSupplyHub.com",
     subheading = "Reset your password",
 
@@ -15,8 +18,12 @@ const ForgotPassword = ({
 
     resetText = "Send Reset Link",
     backToLoginText = "Back to login",
-    loginUrl = "#"
 }) => {
+    const navigate = useNavigate();
+
+    const handleReset = () => {
+        navigate("/update-password");
+    };
     return (
         <section className="py-32 px-80">
             <div className="container">
