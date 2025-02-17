@@ -39,7 +39,7 @@ const ForgotPassword = ({
                         <div>
                             <div className="grid gap-4">
                                 <Input type="email" placeholder="Enter your email" required />
-                                <Button type="submit" className="mt-2 w-full">
+                                <Button type="button" onClick={handleReset} className="mt-2 w-full">
                                     {resetText}
                                 </Button>
                             </div>
