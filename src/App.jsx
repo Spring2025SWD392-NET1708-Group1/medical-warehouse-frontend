@@ -4,6 +4,7 @@ import Homepage from "./pages/common/Homepage";
 import { Login } from "./pages/common/Login";
 import { Signup } from "./pages/common/Signup";
 import { About } from "./pages/common/About";
+import { ForgotPassword } from "./pages/common/ForgotPassword";
 function App() {
 
   return (
@@ -15,6 +16,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/about" element={<About />} />
+            <Route path="/forgotpassword" element={<ForgotPassword />} ></Route>
           </Route>
         </Routes>
       </Router>
