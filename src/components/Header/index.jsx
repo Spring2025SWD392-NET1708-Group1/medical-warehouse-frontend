@@ -101,6 +101,10 @@ const Header = ({
     {
       title: "Blog",
       url: "#"
+    },
+    {
+      title: "Track Inventory",
+      url: "/track-inventory"
     }
   ],
 

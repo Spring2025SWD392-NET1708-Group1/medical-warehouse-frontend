@@ -9,6 +9,7 @@ import { UpdatePassword } from "./pages/common/UpdatePassword";
 import MedicalItemList from "./pages/common/MedicalItemList";
 import StaffDashboard from "./pages/common/StaffDashboard";
 import ManagerDashboard from "./pages/common/ManagerDasboard";
+import TrackInventoryMovement from "./pages/common/TrackInventoryMovement";
 function App() {
 
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/item" element={<MedicalItemList />} ></Route>
             <Route path="/staff" element={<StaffDashboard />} ></Route>
             <Route path="/manager" element={<ManagerDashboard />} ></Route>
+            <Route path="/track-inventory" element={<TrackInventoryMovement />} ></Route>
           </Route>
         </Routes>
       </Router>
