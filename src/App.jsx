@@ -7,6 +7,7 @@ import { About } from "./pages/common/About";
 import { ForgotPassword } from "./pages/common/ForgotPassword";
 import { UpdatePassword } from "./pages/common/UpdatePassword";
 import MedicalItemList from "./pages/common/MedicalItemList";
+import TrackInventoryMovement from "./pages/common/TrackInventoryMovement";
 function App() {
 
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} ></Route>
             <Route path="/update-password" element={<UpdatePassword />} ></Route>
             <Route path="/item" element={<MedicalItemList />} ></Route>
+            <Route path="/track-inventory" element={<TrackInventoryMovement />} ></Route>
           </Route>
         </Routes>
       </Router>
