@@ -26,11 +26,11 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} ></Route>
             <Route path="/update-password" element={<UpdatePassword />} ></Route>
             <Route path="/item" element={<MedicalItemList />} ></Route>
-            <Route path="/admin" element={<AdminDashBoard />} ></Route>
             <Route path="/staff" element={<StaffDashboard />} ></Route>
             <Route path="/manager" element={<ManagerDashboard />} ></Route>
             <Route path="/track-inventory" element={<TrackInventoryMovement />} ></Route>
           </Route>
+          <Route path="/admin" element={<AdminDashBoard />} ></Route>
         </Routes>
       </Router>
     </>

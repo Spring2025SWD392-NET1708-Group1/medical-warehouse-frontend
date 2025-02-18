@@ -1,52 +1,65 @@
-import { AppSidebar } from "@/components/Sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger
-} from "@/components/ui/sidebar"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSideBar";
+const AdminDashboard = () => {
+  const [users, setUsers] = useState([
+    { id: 1, name: "John Doe", role: "Manager", status: "Active" },
+    { id: 2, name: "Jane Smith", role: "Staff", status: "Inactive" },
+  ]);
 
-export default function AdminDashBoard() {
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b">
-          <div className="flex items-center gap-2 px-3">
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-          </div>
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
+      <div className="flex h-screen">
+        {/* Sidebar Navigation */}
+        <AppSidebar />
+
+        {/* Main Content */}
+        <div className="flex-1 p-6 overflow-auto">
+          <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+          {/* Warehouse Overview */}
+          <Card className="mb-6">
+            <CardContent>
+              <h2 className="text-xl font-semibold mb-4">Warehouse Overview</h2>
+              <p>Total Users: {users.length}</p>
+              <p>Active Users: {users.filter(user => user.status === "Active").length}</p>
+            </CardContent>
+          </Card>
+
+          {/* User Management */}
+          <Card>
+            <CardContent>
+              <h2 className="text-xl font-semibold mb-4">User Management</h2>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.id}</TableCell>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.role}</TableCell>
+                      <TableCell>{user.status}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Button className="mt-4">Add New User</Button>
+            </CardContent>
+          </Card>
         </div>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
-  )
-}
+  );
+};
+
+export default AdminDashboard;
