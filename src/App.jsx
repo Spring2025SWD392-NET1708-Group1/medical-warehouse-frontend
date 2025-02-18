@@ -5,7 +5,8 @@ import { Login } from "./pages/common/Login";
 import { Signup } from "./pages/common/Signup";
 import { About } from "./pages/common/About";
 import { ForgotPassword } from "./pages/common/ForgotPassword";
-import {UpdatePassword} from "./pages/common/UpdatePassword";
+import { UpdatePassword } from "./pages/common/UpdatePassword";
+import MedicalItemList from "./pages/common/MedicalItemList";
 function App() {
 
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/forgot-password" element={<ForgotPassword />} ></Route>
             <Route path="/update-password" element={<UpdatePassword />} ></Route>
+            <Route path="/item" element={<MedicalItemList />} ></Route>
           </Route>
         </Routes>
       </Router>

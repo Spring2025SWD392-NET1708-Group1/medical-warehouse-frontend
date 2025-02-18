@@ -47,7 +47,7 @@ const Header = ({
           title: "Company",
           description: "Our mission is to innovate and empower the world",
           icon: <Trees className="size-5 shrink-0" />,
-          url: "#"
+          url: "/about"
         },
         {
           title: "Careers",
@@ -96,7 +96,7 @@ const Header = ({
     },
     {
       title: "Pricing",
-      url: "#"
+      url: "/item"
     },
     {
       title: "Blog",
