@@ -9,7 +9,7 @@ const MedicalItemList = () => {
       price: 5.99,
       quantity: 50,
       expiryDate: "2026-08-15",
-      image: "https://images.unsplash.com/photo-1603398938378-c24b4763b8b2",
+      image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d",
     },
     {
       id: 2,
@@ -36,7 +36,7 @@ const MedicalItemList = () => {
       price: 4.99,
       quantity: 100,
       expiryDate: "2028-05-30",
-      image: "https://images.unsplash.com/photo-1580281657767-9b1b28fc9f44",
+      image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d",
     },
   ];
 

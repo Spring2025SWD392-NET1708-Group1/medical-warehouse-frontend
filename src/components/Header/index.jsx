@@ -78,7 +78,7 @@ const Header = ({
           title: "Contact Us",
           description: "We are here to help you with any questions you have",
           icon: <Sunset className="size-5 shrink-0" />,
-          url: "#"
+          url: "/signup"
         },
         {
           title: "Status",
@@ -106,7 +106,7 @@ const Header = ({
 
   mobileExtraLinks = [
     { name: "Press", url: "#" },
-    { name: "Contact", url: "#" },
+    { name: "Contact", url: "/signup" },
     { name: "Imprint", url: "#" },
     { name: "Sitemap", url: "#" }
   ],

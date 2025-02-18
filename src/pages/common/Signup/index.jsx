@@ -15,7 +15,7 @@ const Signup = ({
   googleText = "Sign up with Google",
   signupText = "Create an account",
   loginText = "Already have an account?",
-  loginUrl = "#"
+  loginUrl = "/login"
 }) => {
   return (
     <section className="py-32 px-80">
