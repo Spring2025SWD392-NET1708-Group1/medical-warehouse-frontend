@@ -1,78 +1,84 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import LotForm from "@/components/Form/LotForm";
-
-const STORAGE_TYPES = ["Cold Storage", "Frozen Storage", "Hazardous Storage", "Dry Storage"];
-
-const WarehouseSummary = ({ lots }) => {
-  const totalLots = lots.length;
-  const storageUsage = STORAGE_TYPES.map(type => ({
-    type,
-    count: lots.filter(lot => lot.storage === type).length
-  }));
-
-  return (
-    <Card className="shadow-lg rounded-lg p-4">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-4">Warehouse Summary</h2>
-        <p className="text-lg">Total Lots: {totalLots}</p>
-        {storageUsage.map(({ type, count }) => (
-          <p key={type} className="text-md text-gray-700">{type}: {count} lots</p>
-        ))}
-      </CardContent>
-    </Card>
-  );
-};
-
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { SidebarProvider } from "@/components/ui/sidebar";
 const StaffDashboard = () => {
-  const [lots, setLots] = useState([
-    { id: 1, supplier: "MedCorp", storage: "Cold Storage", quantity: 100, expiry: "2025-12-01" },
-    { id: 2, supplier: "HealthPlus", storage: "Normal Storage", quantity: 200, expiry: "2026-01-15" },
-  ]);
-  const [showForm, setShowForm] = useState(false);
+  const [lotRequests, setLotRequests] = useState([]);
+  const [approvedLots, setApprovedLots] = useState([]);
 
-  const handleNewLot = (newLot) => {
-    setLots([...lots, { id: lots.length + 1, ...newLot }]);
-    setShowForm(false);
+  const addLotRequest = () => {
+    const newLot = { id: lotRequests.length + 1, status: "Pending" };
+    setLotRequests([...lotRequests, newLot]);
+  };
+
+  const reportLot = (id) => {
+    setLotRequests(lotRequests.map(lot => lot.id === id ? { ...lot, status: "Reported" } : lot));
   };
 
   return (
-    <div className="p-6 container mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">Staff Dashboard</h1>
+    <SidebarProvider>
+      <div className="flex h-screen">
+        <div className="flex-1 p-6 overflow-auto">
+          <h1 className="text-3xl font-bold text-center mb-6">Staff Dashboard</h1>
 
-      <WarehouseSummary lots={lots} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Lot Request Feature */}
+            <Card className="w-full">
+              <CardContent>
+                <h2 className="text-xl font-semibold mb-4">Lot Requests</h2>
+                <Button onClick={addLotRequest} className="mb-4">Add Lot Request</Button>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lotRequests.map((lot) => (
+                      <TableRow key={lot.id}>
+                        <TableCell>{lot.id}</TableCell>
+                        <TableCell>{lot.status}</TableCell>
+                        <TableCell>
+                          {lot.status === "Pending" && (
+                            <Button variant="destructive" onClick={() => reportLot(lot.id)}>Report</Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
 
-      <h2 className="text-2xl font-semibold mt-6 mb-4">Received Lots</h2>
-      <div className="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="p-3 border">Supplier</th>
-              <th className="p-3 border">Storage</th>
-              <th className="p-3 border">Quantity</th>
-              <th className="p-3 border">Expiry Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lots.map((lot) => (
-              <tr key={lot.id} className="border hover:bg-gray-100">
-                <td className="p-3 border">{lot.supplier}</td>
-                <td className="p-3 border">{lot.storage}</td>
-                <td className="p-3 border">{lot.quantity}</td>
-                <td className="p-3 border">{lot.expiry}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            {/* Approved Lots */}
+            <Card className="w-full">
+              <CardContent>
+                <h2 className="text-xl font-semibold mb-4">Approved Lots & Storage</h2>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Storage Location</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {approvedLots.map((lot) => (
+                      <TableRow key={lot.id}>
+                        <TableCell>{lot.id}</TableCell>
+                        <TableCell>{lot.storage}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
-
-      <Button onClick={() => setShowForm(true)} className="mt-4 flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-        Add New Lot
-      </Button>
-
-      {showForm && <LotForm onSubmit={handleNewLot} onCancel={() => setShowForm(false)} />}
-    </div>
+    </SidebarProvider>
   );
 };
 

@@ -1,92 +1,91 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectItem } from "@/components/ui/select";
-
-const STORAGE_TYPES = ["Cold Storage", "Frozen Storage", "Hazardous Storage", "Dry Storage"];
-const STORAGE_STATUS = ["Available", "Full", "Maintenance"];
-
-const WarehouseSummary = ({ lots }) => {
-  const totalLots = lots.length;
-  const storageUsage = STORAGE_TYPES.map(type => ({
-    type,
-    count: lots.filter(lot => lot.storage === type).length
-  }));
-
-  return (
-    <Card className="shadow-lg rounded-lg p-4">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-4">Warehouse Summary</h2>
-        <p className="text-lg">Total Lots: {totalLots}</p>
-        {storageUsage.map(({ type, count }) => (
-          <p key={type} className="text-md text-gray-700">{type}: {count} lots</p>
-        ))}
-      </CardContent>
-    </Card>
-  );
-};
-
-const LotApproval = ({ lot, onApprove }) => {
-  return (
-    <div className="flex justify-center">
-      <Button className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700" onClick={() => onApprove(lot.id)}>Approve Lot</Button>
-    </div>
-  );
-};
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
 
 const ManagerDashboard = () => {
-  const [lots, setLots] = useState([
-    {
-      id: 1, supplier: "MedCorp", storage: "Cold Storage", status: "Pending Approval", items: [
-        { name: "Vaccine", quantity: 50 },
-        { name: "Insulin", quantity: 30 }
-      ]
-    },
-    {
-      id: 2, supplier: "HealthPlus", storage: "Frozen Storage", status: "Pending Approval", items: [
-        { name: "Plasma", quantity: 20 }
-      ]
-    }
+  const [lotRequests, setLotRequests] = useState([
+    { id: 1, status: "Pending" },
+    { id: 2, status: "Pending" }
   ]);
+  const [approvedLots, setApprovedLots] = useState([]);
 
-  const handleApproveLot = (lotId) => {
-    setLots(lots.map(lot => lot.id === lotId ? { ...lot, status: "Approved" } : lot));
+  const approveLot = (id, storage) => {
+    setApprovedLots([...approvedLots, { id, storage }]);
+    setLotRequests(lotRequests.filter(lot => lot.id !== id));
+  };
+
+  const rejectLot = (id) => {
+    setLotRequests(lotRequests.filter(lot => lot.id !== id));
   };
 
   return (
-    <div className="p-6 container mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">Manager Dashboard</h1>
+    <SidebarProvider>
+      <div className="flex h-screen">
+        <div className="flex-1 p-6 overflow-auto">
+          <h1 className="text-3xl font-bold mb-6">Manager Dashboard</h1>
 
-      <WarehouseSummary lots={lots} />
+          {/* Lot Requests */}
+          <Card className="mb-6">
+            <CardContent>
+              <h2 className="text-xl font-semibold mb-4">Pending Lot Requests</h2>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lotRequests.map((lot) => (
+                    <TableRow key={lot.id}>
+                      <TableCell>{lot.id}</TableCell>
+                      <TableCell>{lot.status}</TableCell>
+                      <TableCell className="flex flex-col sm:flex-row gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Storage Location"
+                          className="p-2 border rounded"
+                          onChange={(e) => lot.storage = e.target.value}
+                        />
+                        <Button onClick={() => approveLot(lot.id, lot.storage)} className="bg-green-500 text-white">Approve</Button>
+                        <Button variant="destructive" onClick={() => rejectLot(lot.id)}>Reject</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-      <h2 className="text-2xl font-semibold mt-6 mb-4">Lot Approvals</h2>
-      <div className="bg-white shadow-md rounded-lg p-4 overflow-x-auto">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="p-3 border">Supplier</th>
-              <th className="p-3 border">Storage</th>
-              <th className="p-3 border">Status</th>
-              <th className="p-3 border">Items</th>
-              <th className="p-3 border text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lots.map((lot) => (
-              <tr key={lot.id} className="border hover:bg-gray-100">
-                <td className="p-3 border">{lot.supplier}</td>
-                <td className="p-3 border">{lot.storage}</td>
-                <td className="p-3 border text-yellow-600 font-semibold">{lot.status}</td>
-                <td className="p-3 border">{lot.items.map(item => `${item.name} (${item.quantity})`).join(", ")}</td>
-                <td className="p-3 border text-center">
-                  {lot.status === "Pending Approval" && <LotApproval lot={lot} onApprove={handleApproveLot} />}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          {/* Approved Lots */}
+          <Card>
+            <CardContent>
+              <h2 className="text-xl font-semibold mb-4">Approved Lots & Storage</h2>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Storage Location</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {approvedLots.map((lot) => (
+                    <TableRow key={lot.id}>
+                      <TableCell>{lot.id}</TableCell>
+                      <TableCell>{lot.storage}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
