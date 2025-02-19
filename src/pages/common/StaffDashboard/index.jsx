@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const StaffDashboard = () => {
   const [lotRequests, setLotRequests] = useState([]);
@@ -42,6 +43,8 @@ const StaffDashboard = () => {
       expiryDate: "",
       stockinDate: "",
     });
+    
+    toast.success("Lot request has been sent to Manager");
   };
 
   const addLotRequest = () => {
@@ -68,6 +71,12 @@ const StaffDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
+                      <TableHead>Lot ID</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Quality</TableHead>
+                      <TableHead>Expiry Date</TableHead>
+                      <TableHead>Stock-in Date</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -76,6 +85,12 @@ const StaffDashboard = () => {
                     {lotRequests.map((lot) => (
                       <TableRow key={lot.id}>
                         <TableCell>{lot.id}</TableCell>
+                        <TableCell>{lot.lotId}</TableCell>
+                        <TableCell>{lot.item}</TableCell>
+                        <TableCell>{lot.quantity}</TableCell>
+                        <TableCell>{lot.quality}</TableCell>
+                        <TableCell>{lot.expiryDate}</TableCell>
+                        <TableCell>{lot.stockinDate}</TableCell>
                         <TableCell>{lot.status}</TableCell>
                         <TableCell>
                           {lot.status === "Pending" && (
@@ -97,6 +112,12 @@ const StaffDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
+                      <TableHead>Lot ID</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Quality</TableHead>
+                      <TableHead>Expiry Date</TableHead>
+                      <TableHead>Stock-in Date</TableHead>
                       <TableHead>Storage Location</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -104,6 +125,12 @@ const StaffDashboard = () => {
                     {approvedLots.map((lot) => (
                       <TableRow key={lot.id}>
                         <TableCell>{lot.id}</TableCell>
+                        <TableCell>{lot.lotId}</TableCell>
+                        <TableCell>{lot.item}</TableCell>
+                        <TableCell>{lot.quantity}</TableCell>
+                        <TableCell>{lot.quality}</TableCell>
+                        <TableCell>{lot.expiryDate}</TableCell>
+                        <TableCell>{lot.stockinDate}</TableCell>
                         <TableCell>{lot.storage}</TableCell>
                       </TableRow>
                     ))}
