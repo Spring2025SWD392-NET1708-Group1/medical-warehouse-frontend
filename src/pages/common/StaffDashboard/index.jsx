@@ -3,13 +3,49 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 const StaffDashboard = () => {
   const [lotRequests, setLotRequests] = useState([]);
   const [approvedLots, setApprovedLots] = useState([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newLotData, setNewLotData] = useState({
+    lotId: "",
+    item: "",
+    quantity: "",
+    quality: "",
+    expiryDate: "",
+    stockinDate: "",
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newLot = {
+      id: lotRequests.length + 1,
+      status: "Pending",
+      ...newLotData,
+    };
+    setLotRequests([...lotRequests, newLot]);
+    setIsDialogOpen(false);
+    setNewLotData({
+      lotId: "",
+      item: "",
+      quantity: "",
+      quality: "",
+      expiryDate: "",
+      stockinDate: "",
+    });
+  };
 
   const addLotRequest = () => {
-    const newLot = { id: lotRequests.length + 1, status: "Pending" };
-    setLotRequests([...lotRequests, newLot]);
+    setIsDialogOpen(true);
   };
 
   const reportLot = (id) => {
@@ -77,6 +113,86 @@ const StaffDashboard = () => {
             </Card>
           </div>
         </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Lot Request</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="lotId">Lot ID</Label>
+                <Input
+                  id="lotId"
+                  value={newLotData.lotId}
+                  onChange={(e) =>
+                    setNewLotData({ ...newLotData, lotId: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="item">Item</Label>
+                <Input
+                  id="item"
+                  value={newLotData.item}
+                  onChange={(e) =>
+                    setNewLotData({ ...newLotData, item: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={newLotData.quantity}
+                  onChange={(e) =>
+                    setNewLotData({ ...newLotData, quantity: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="quality">Quality</Label>
+                <Input
+                  id="quality"
+                  value={newLotData.quality}
+                  onChange={(e) =>
+                    setNewLotData({ ...newLotData, quality: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="expiryDate">Expiry Date</Label>
+                <Input
+                  id="expiryDate"
+                  type="date"
+                  value={newLotData.expiryDate}
+                  onChange={(e) =>
+                    setNewLotData({ ...newLotData, expiryDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stockinDate">Stock-in Date</Label>
+                <Input
+                  id="stockinDate"
+                  type="date"
+                  value={newLotData.stockinDate}
+                  onChange={(e) =>
+                    setNewLotData({ ...newLotData, stockinDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <Button type="submit">Submit</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </SidebarProvider>
   );
