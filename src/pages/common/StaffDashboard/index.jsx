@@ -12,8 +12,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { PlusCircle, Search, FileText } from "lucide-react";
 
 const StaffDashboard = () => {
+  const [activeTab, setActiveTab] = useState("lots");
   const [lotRequests, setLotRequests] = useState([]);
   const [approvedLots, setApprovedLots] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -43,7 +45,7 @@ const StaffDashboard = () => {
       expiryDate: "",
       stockinDate: "",
     });
-    
+
     toast.success("Lot request has been sent to Manager");
   };
 
@@ -58,87 +60,132 @@ const StaffDashboard = () => {
   return (
     <SidebarProvider>
       <div className="flex h-screen">
-        <div className="flex-1 p-6 overflow-auto">
-          <h1 className="text-3xl font-bold text-center mb-6">Staff Dashboard</h1>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Lot Request Feature */}
-            <Card className="w-full">
-              <CardContent>
-                <h2 className="text-xl font-semibold mb-4">Lot Requests</h2>
-                <Button onClick={addLotRequest} className="mb-4">Add Lot Request</Button>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Lot ID</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Quality</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                      <TableHead>Stock-in Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lotRequests.map((lot) => (
-                      <TableRow key={lot.id}>
-                        <TableCell>{lot.id}</TableCell>
-                        <TableCell>{lot.lotId}</TableCell>
-                        <TableCell>{lot.item}</TableCell>
-                        <TableCell>{lot.quantity}</TableCell>
-                        <TableCell>{lot.quality}</TableCell>
-                        <TableCell>{lot.expiryDate}</TableCell>
-                        <TableCell>{lot.stockinDate}</TableCell>
-                        <TableCell>{lot.status}</TableCell>
-                        <TableCell>
-                          {lot.status === "Pending" && (
-                            <Button variant="destructive" onClick={() => reportLot(lot.id)}>Report</Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            {/* Approved Lots */}
-            <Card className="w-full">
-              <CardContent>
-                <h2 className="text-xl font-semibold mb-4">Approved Lots & Storage</h2>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Lot ID</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Quality</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                      <TableHead>Stock-in Date</TableHead>
-                      <TableHead>Storage Location</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {approvedLots.map((lot) => (
-                      <TableRow key={lot.id}>
-                        <TableCell>{lot.id}</TableCell>
-                        <TableCell>{lot.lotId}</TableCell>
-                        <TableCell>{lot.item}</TableCell>
-                        <TableCell>{lot.quantity}</TableCell>
-                        <TableCell>{lot.quality}</TableCell>
-                        <TableCell>{lot.expiryDate}</TableCell>
-                        <TableCell>{lot.stockinDate}</TableCell>
-                        <TableCell>{lot.storage}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+        <div className="w-64 bg-gray-100 border-r">
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Staff Menu</h2>
+            <nav className="space-y-2">
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "lots" ? "bg-primary text-white" : "hover:bg-gray-200"
+                  }`}
+                onClick={() => setActiveTab("lots")}
+              >
+                <PlusCircle size={20} />
+                Add Lots
+              </button>
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "search" ? "bg-primary text-white" : "hover:bg-gray-200"
+                  }`}
+                onClick={() => setActiveTab("search")}
+              >
+                <Search size={20} />
+                Search Lots & Items
+              </button>
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"
+                  }`}
+                onClick={() => setActiveTab("report")}
+              >
+                <FileText size={20} />
+                Report
+              </button>
+            </nav>
           </div>
+        </div>
+
+        <div className="flex-1 p-6 overflow-auto">
+
+          {activeTab === "lots" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="w-full">
+                <CardContent>
+                  <h2 className="text-xl font-semibold mb-4">Lot Requests</h2>
+                  <Button onClick={addLotRequest} className="mb-4">Add Lot Request</Button>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Lot ID</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Quality</TableHead>
+                        <TableHead>Expiry Date</TableHead>
+                        <TableHead>Stock-in Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lotRequests.map((lot) => (
+                        <TableRow key={lot.id}>
+                          <TableCell>{lot.id}</TableCell>
+                          <TableCell>{lot.lotId}</TableCell>
+                          <TableCell>{lot.item}</TableCell>
+                          <TableCell>{lot.quantity}</TableCell>
+                          <TableCell>{lot.quality}</TableCell>
+                          <TableCell>{lot.expiryDate}</TableCell>
+                          <TableCell>{lot.stockinDate}</TableCell>
+                          <TableCell>{lot.status}</TableCell>
+                          <TableCell>
+                            {lot.status === "Pending" && (
+                              <Button variant="destructive" onClick={() => reportLot(lot.id)}>Report</Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              <Card className="w-full">
+                <CardContent>
+                  <h2 className="text-xl font-semibold mb-4">Approved Lots & Storage</h2>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Lot ID</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Quality</TableHead>
+                        <TableHead>Expiry Date</TableHead>
+                        <TableHead>Stock-in Date</TableHead>
+                        <TableHead>Storage Location</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {approvedLots.map((lot) => (
+                        <TableRow key={lot.id}>
+                          <TableCell>{lot.id}</TableCell>
+                          <TableCell>{lot.lotId}</TableCell>
+                          <TableCell>{lot.item}</TableCell>
+                          <TableCell>{lot.quantity}</TableCell>
+                          <TableCell>{lot.quality}</TableCell>
+                          <TableCell>{lot.expiryDate}</TableCell>
+                          <TableCell>{lot.stockinDate}</TableCell>
+                          <TableCell>{lot.storage}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === "search" && (
+            <div className="text-center p-8">
+              <h2 className="text-xl">Search Lots & Items Component</h2>
+              <p>Search functionality coming soon...</p>
+            </div>
+          )}
+
+          {activeTab === "report" && (
+            <div className="text-center p-8">
+              <h2 className="text-xl">Report Component</h2>
+              <p>Report functionality coming soon...</p>
+            </div>
+          )}
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

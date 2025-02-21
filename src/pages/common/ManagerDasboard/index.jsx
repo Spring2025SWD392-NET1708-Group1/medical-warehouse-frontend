@@ -11,8 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { InboxIcon, Search, FileText } from "lucide-react";
 
 const ManagerDashboard = () => {
+  const [activeTab, setActiveTab] = useState("requests");
   const [lotRequests, setLotRequests] = useState([
     { 
       id: 1, 
@@ -63,37 +65,110 @@ const ManagerDashboard = () => {
   return (
     <SidebarProvider>
       <div className="flex h-screen">
+        <div className="w-64 bg-gray-100 border-r">
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Manager Menu</h2>
+            <nav className="space-y-2">
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  activeTab === "requests" ? "bg-primary text-white" : "hover:bg-gray-200"
+                }`}
+                onClick={() => setActiveTab("requests")}
+              >
+                <InboxIcon size={20} />
+                Lots Request
+              </button>
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  activeTab === "search" ? "bg-primary text-white" : "hover:bg-gray-200"
+                }`}
+                onClick={() => setActiveTab("search")}
+              >
+                <Search size={20} />
+                Search Lots & Items
+              </button>
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"
+                }`}
+                onClick={() => setActiveTab("report")}
+              >
+                <FileText size={20} />
+                Report
+              </button>
+            </nav>
+          </div>
+        </div>
+
         <div className="flex-1 p-6 overflow-auto">
-          <h1 className="text-3xl font-bold mb-6">Manager Dashboard</h1>
+          {activeTab === "requests" && (
+            <>
+              <h1 className="text-3xl font-bold mb-6">Manager Dashboard</h1>
 
-          {/* Lot Requests */}
-          <Card className="mb-6">
-            <CardContent>
-              <h2 className="text-xl font-semibold mb-4">Pending Lot Requests</h2>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lotRequests.map((lot) => (
-                    <TableRow 
-                      key={lot.id} 
-                      className="cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleRowClick(lot)}
-                    >
-                      <TableCell>{lot.id}</TableCell>
-                      <TableCell>{lot.status}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+              <Card className="mb-6">
+                <CardContent>
+                  <h2 className="text-xl font-semibold mb-4">Pending Lot Requests</h2>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lotRequests.map((lot) => (
+                        <TableRow 
+                          key={lot.id} 
+                          className="cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleRowClick(lot)}
+                        >
+                          <TableCell>{lot.id}</TableCell>
+                          <TableCell>{lot.status}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
 
-          {/* Details Dialog */}
+              <Card>
+                <CardContent>
+                  <h2 className="text-xl font-semibold mb-4">Approved Lots & Storage</h2>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Storage Location</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {approvedLots.map((lot) => (
+                        <TableRow key={lot.id}>
+                          <TableCell>{lot.id}</TableCell>
+                          <TableCell>{lot.storage}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {activeTab === "search" && (
+            <div className="text-center p-8">
+              <h2 className="text-xl">Search Lots & Items Component</h2>
+              <p>Search functionality coming soon...</p>
+            </div>
+          )}
+
+          {activeTab === "report" && (
+            <div className="text-center p-8">
+              <h2 className="text-xl">Report Component</h2>
+              <p>Report functionality coming soon...</p>
+            </div>
+          )}
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
@@ -151,29 +226,6 @@ const ManagerDashboard = () => {
               )}
             </DialogContent>
           </Dialog>
-
-          {/* Approved Lots */}
-          <Card>
-            <CardContent>
-              <h2 className="text-xl font-semibold mb-4">Approved Lots & Storage</h2>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Storage Location</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {approvedLots.map((lot) => (
-                    <TableRow key={lot.id}>
-                      <TableCell>{lot.id}</TableCell>
-                      <TableCell>{lot.storage}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </SidebarProvider>
