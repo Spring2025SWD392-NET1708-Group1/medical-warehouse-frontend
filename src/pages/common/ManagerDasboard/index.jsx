@@ -1,42 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { InboxIcon, Search, FileText } from "lucide-react";
 
+const API_URL = "http://localhost:5090/api/lot-request";
+
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("requests");
-  const [lotRequests, setLotRequests] = useState([
-    { 
-      id: 1, 
-      status: "Pending",
-      lotId: "LOT001",
-      item: "Sample Item",
-      quantity: 100,
-      quality: "A",
-      expiryDate: "2024-12-31",
-      stockinDate: "2024-03-20"
-    },
-    { id: 2, status: "Pending" }
-  ]);
+  const [lotRequests, setLotRequests] = useState([]);
   const [approvedLots, setApprovedLots] = useState([]);
   const [selectedLot, setSelectedLot] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [storageLocation, setStorageLocation] = useState("");
 
+  useEffect(() => {
+    fetchLotRequests();
+  }, []);
+
+  const fetchLotRequests = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      const formattedData = data.map((lot) => ({
+        id: lot.lotRequestId,
+        lotId: lot.lotRequestId.substring(0, 8).toUpperCase(), // Shortened ID
+        status: lot.status === 3 ? "Pending" : "Processed",
+        item: lot.item.name,
+        quantity: lot.item.quantity,
+        quality: lot.quality,
+        expiryDate: lot.item.expiryDate.split("T")[0], // Format date
+        stockinDate: lot.stockInDate.split("T")[0], // Format date
+      }));
+      setLotRequests(formattedData);
+    } catch (error) {
+      console.error("Failed to fetch lot requests:", error);
+    }
+  };
+
   const handleRowClick = (lot) => {
     setSelectedLot(lot);
     setIsDialogOpen(true);
-    setStorageLocation(""); // Reset storage location when opening dialog
+    setStorageLocation(""); // Reset storage location
   };
 
   const handleApprove = () => {
@@ -70,27 +79,24 @@ const ManagerDashboard = () => {
             <h2 className="text-xl font-bold mb-4">Manager Menu</h2>
             <nav className="space-y-2">
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  activeTab === "requests" ? "bg-primary text-white" : "hover:bg-gray-200"
-                }`}
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "requests" ? "bg-primary text-white" : "hover:bg-gray-200"
+                  }`}
                 onClick={() => setActiveTab("requests")}
               >
                 <InboxIcon size={20} />
                 Lots Request
               </button>
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  activeTab === "search" ? "bg-primary text-white" : "hover:bg-gray-200"
-                }`}
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "search" ? "bg-primary text-white" : "hover:bg-gray-200"
+                  }`}
                 onClick={() => setActiveTab("search")}
               >
                 <Search size={20} />
                 Search Lots & Items
               </button>
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"
-                }`}
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"
+                  }`}
                 onClick={() => setActiveTab("report")}
               >
                 <FileText size={20} />
@@ -117,8 +123,8 @@ const ManagerDashboard = () => {
                     </TableHeader>
                     <TableBody>
                       {lotRequests.map((lot) => (
-                        <TableRow 
-                          key={lot.id} 
+                        <TableRow
+                          key={lot.id}
                           className="cursor-pointer hover:bg-gray-100"
                           onClick={() => handleRowClick(lot)}
                         >
@@ -155,20 +161,6 @@ const ManagerDashboard = () => {
             </>
           )}
 
-          {activeTab === "search" && (
-            <div className="text-center p-8">
-              <h2 className="text-xl">Search Lots & Items Component</h2>
-              <p>Search functionality coming soon...</p>
-            </div>
-          )}
-
-          {activeTab === "report" && (
-            <div className="text-center p-8">
-              <h2 className="text-xl">Report Component</h2>
-              <p>Report functionality coming soon...</p>
-            </div>
-          )}
-
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
@@ -202,7 +194,7 @@ const ManagerDashboard = () => {
                       <div className="mt-1">{selectedLot.stockinDate}</div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4">
                     <Label htmlFor="storage">Storage Location</Label>
                     <Input
