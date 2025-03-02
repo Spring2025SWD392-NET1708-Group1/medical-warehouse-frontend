@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { InboxIcon, Search, FileText } from "lucide-react";
+import { motion } from "framer-motion";
 
 const API_URL = "http://localhost:5090/api/lot-request";
 
@@ -17,6 +18,7 @@ const ManagerDashboard = () => {
   const [selectedLot, setSelectedLot] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [storageLocation, setStorageLocation] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchLotRequests();
@@ -26,17 +28,7 @@ const ManagerDashboard = () => {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
-      const formattedData = data.map((lot) => ({
-        id: lot.lotRequestId,
-        lotId: lot.lotRequestId.substring(0, 8).toUpperCase(), // Shortened ID
-        status: lot.status === 3 ? "Pending" : "Processed",
-        item: lot.item.name,
-        quantity: lot.item.quantity,
-        quality: lot.quality,
-        expiryDate: lot.item.expiryDate.split("T")[0], // Format date
-        stockinDate: lot.stockInDate.split("T")[0], // Format date
-      }));
-      setLotRequests(formattedData);
+      setLotRequests(data);
     } catch (error) {
       console.error("Failed to fetch lot requests:", error);
     }
@@ -45,30 +37,61 @@ const ManagerDashboard = () => {
   const handleRowClick = (lot) => {
     setSelectedLot(lot);
     setIsDialogOpen(true);
-    setStorageLocation(""); // Reset storage location
+    setStorageLocation("");
   };
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (storageLocation.trim()) {
-      approveLot(selectedLot.id, storageLocation);
-      setIsDialogOpen(false);
-      setSelectedLot(null);
+      setIsLoading(true);
+      try {
+        await updateLotStatus(selectedLot.lotRequestId, parseInt(storageLocation), 3);
+        setIsDialogOpen(false);
+        setSelectedLot(null);
+        fetchLotRequests(); // Refresh the list after approval
+      } catch (error) {
+        console.error("Failed to approve lot request:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleReject = () => {
-    rejectLot(selectedLot.id);
-    setIsDialogOpen(false);
-    setSelectedLot(null);
+  const handleReject = async () => {
+    setIsLoading(true);
+    try {
+      await updateLotStatus(selectedLot.lotRequestId, 0, 5);
+      setIsDialogOpen(false);
+      setSelectedLot(null);
+      fetchLotRequests(); // Refresh the list after rejection
+    } catch (error) {
+      console.error("Failed to reject lot request:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const approveLot = (id, storage) => {
-    setApprovedLots([...approvedLots, { id, storage }]);
-    setLotRequests(lotRequests.filter(lot => lot.id !== id));
-  };
+  const updateLotStatus = async (id, storageId, status) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          storageId: storageId,
+          status: status
+        }),
+      });
 
-  const rejectLot = (id) => {
-    setLotRequests(lotRequests.filter(lot => lot.id !== id));
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error updating lot status:", error);
+      throw error;
+    }
   };
 
   return (
@@ -79,24 +102,21 @@ const ManagerDashboard = () => {
             <h2 className="text-xl font-bold mb-4">Manager Menu</h2>
             <nav className="space-y-2">
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "requests" ? "bg-primary text-white" : "hover:bg-gray-200"
-                  }`}
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "requests" ? "bg-primary text-white" : "hover:bg-gray-200"}`}
                 onClick={() => setActiveTab("requests")}
               >
                 <InboxIcon size={20} />
                 Lots Request
               </button>
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "search" ? "bg-primary text-white" : "hover:bg-gray-200"
-                  }`}
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "search" ? "bg-primary text-white" : "hover:bg-gray-200"}`}
                 onClick={() => setActiveTab("search")}
               >
                 <Search size={20} />
                 Search Lots & Items
               </button>
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"
-                  }`}
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"}`}
                 onClick={() => setActiveTab("report")}
               >
                 <FileText size={20} />
@@ -110,7 +130,6 @@ const ManagerDashboard = () => {
           {activeTab === "requests" && (
             <>
               <h1 className="text-3xl font-bold mb-6">Manager Dashboard</h1>
-
               <Card className="mb-6">
                 <CardContent>
                   <h2 className="text-xl font-semibold mb-4">Pending Lot Requests</h2>
@@ -124,36 +143,19 @@ const ManagerDashboard = () => {
                     <TableBody>
                       {lotRequests.map((lot) => (
                         <TableRow
-                          key={lot.id}
+                          key={lot.lotRequestId}
                           className="cursor-pointer hover:bg-gray-100"
                           onClick={() => handleRowClick(lot)}
                         >
-                          <TableCell>{lot.id}</TableCell>
+                          <TableCell>{lot.lotRequestId}</TableCell>
                           <TableCell>{lot.status}</TableCell>
                         </TableRow>
                       ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent>
-                  <h2 className="text-xl font-semibold mb-4">Approved Lots & Storage</h2>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Storage Location</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {approvedLots.map((lot) => (
-                        <TableRow key={lot.id}>
-                          <TableCell>{lot.id}</TableCell>
-                          <TableCell>{lot.storage}</TableCell>
+                      {lotRequests.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={2} className="text-center py-4">No pending requests</TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -163,59 +165,60 @@ const ManagerDashboard = () => {
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Lot Request Details</DialogTitle>
-              </DialogHeader>
-              {selectedLot && (
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Lot ID</Label>
-                      <div className="mt-1">{selectedLot.lotId}</div>
+              <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <DialogHeader>
+                  <DialogTitle>Lot Request Details</DialogTitle>
+                </DialogHeader>
+                {selectedLot && (
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Lot ID</Label>
+                        <div className="mt-1 font-medium">{selectedLot.lotRequestId}</div>
+                      </div>
+                      <div>
+                        <Label>Item</Label>
+                        <div className="mt-1 font-medium">{selectedLot.item.name}</div>
+                      </div>
+                      <div>
+                        <Label>Quantity</Label>
+                        <div className="mt-1 font-medium">{selectedLot.item.quantity}</div>
+                      </div>
+                      <div>
+                        <Label>Quality</Label>
+                        <div className="mt-1 font-medium">{selectedLot.quality}</div>
+                      </div>
                     </div>
                     <div>
-                      <Label>Item</Label>
-                      <div className="mt-1">{selectedLot.item}</div>
+                      <Label htmlFor="storage">Storage Location</Label>
+                      <Input
+                        id="storage"
+                        value={storageLocation}
+                        onChange={(e) => setStorageLocation(e.target.value)}
+                        className="mt-1"
+                        placeholder="Enter storage location ID"
+                        type="number"
+                      />
                     </div>
-                    <div>
-                      <Label>Quantity</Label>
-                      <div className="mt-1">{selectedLot.quantity}</div>
-                    </div>
-                    <div>
-                      <Label>Quality</Label>
-                      <div className="mt-1">{selectedLot.quality}</div>
-                    </div>
-                    <div>
-                      <Label>Expiry Date</Label>
-                      <div className="mt-1">{selectedLot.expiryDate}</div>
-                    </div>
-                    <div>
-                      <Label>Stock-in Date</Label>
-                      <div className="mt-1">{selectedLot.stockinDate}</div>
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button
+                        onClick={handleApprove}
+                        className="bg-green-500 text-white"
+                        disabled={!storageLocation.trim() || isLoading}
+                      >
+                        {isLoading ? "Processing..." : "Approve"}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={handleReject}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Processing..." : "Reject"}
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="mt-4">
-                    <Label htmlFor="storage">Storage Location</Label>
-                    <Input
-                      id="storage"
-                      value={storageLocation}
-                      onChange={(e) => setStorageLocation(e.target.value)}
-                      className="mt-1"
-                      placeholder="Enter storage location"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button onClick={handleApprove} className="bg-green-500 text-white">
-                      Approve
-                    </Button>
-                    <Button variant="destructive" onClick={handleReject}>
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              )}
+                )}
+              </motion.div>
             </DialogContent>
           </Dialog>
         </div>
