@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { InboxIcon, Search, FileText, AlertCircle, CheckCircle, XCircle, Clock } from "lucide-react";
+import { InboxIcon, Search, FileText, AlertCircle, CheckCircle, XCircle, Clock, Package } from "lucide-react";
+import { motion } from "framer-motion";
 
 const API_URL = "http://localhost:5090/api/lot-request";
+const ITEMS_API_URL = "http://localhost:5090/api/items";
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("requests");
@@ -22,6 +24,13 @@ const ManagerDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Items state
+  const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [itemSearchTerm, setItemSearchTerm] = useState("");
+  const [isLoadingItems, setIsLoadingItems] = useState(false);
+  const [itemsError, setItemsError] = useState("");
 
   useEffect(() => {
     fetchLotRequests();
@@ -46,6 +55,12 @@ const ManagerDashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (activeTab === "search") {
+      fetchItems();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     // Filter requests based on search term
     if (searchTerm.trim() === "") {
       setFilteredRequests(lotRequests);
@@ -59,6 +74,21 @@ const ManagerDashboard = () => {
     }
   }, [searchTerm, lotRequests]);
 
+  useEffect(() => {
+    // Filter items based on item search term
+    if (itemSearchTerm.trim() === "") {
+      setFilteredItems(items);
+    } else {
+      const filtered = items.filter(
+        (item) =>
+          item.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
+          (item.description && item.description.toLowerCase().includes(itemSearchTerm.toLowerCase())) ||
+          (item.categoryName && item.categoryName.toLowerCase().includes(itemSearchTerm.toLowerCase()))
+      );
+      setFilteredItems(filtered);
+    }
+  }, [itemSearchTerm, items]);
+
   const fetchLotRequests = async () => {
     try {
       setIsLoading(true);
@@ -71,6 +101,25 @@ const ManagerDashboard = () => {
       setErrorMessage("Unable to load lot requests. Please try again later.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchItems = async () => {
+    try {
+      setIsLoadingItems(true);
+      setItemsError("");
+      const response = await fetch(ITEMS_API_URL);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      const data = await response.json();
+      setItems(data);
+      setFilteredItems(data);
+    } catch (error) {
+      console.error("Failed to fetch items:", error);
+      setItemsError("Unable to load items. Please try again later.");
+    } finally {
+      setIsLoadingItems(false);
     }
   };
 
@@ -159,6 +208,12 @@ const ManagerDashboard = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
@@ -230,12 +285,12 @@ const ManagerDashboard = () => {
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-800">
                 {activeTab === "requests" && "Lot Request Management"}
-                {activeTab === "search" && "Search Lots & Items"}
+                {activeTab === "search" && "Search Items"}
                 {activeTab === "report" && "Reports"}
               </h1>
               <div className="flex space-x-2">
                 <Button
-                  onClick={fetchLotRequests}
+                  onClick={activeTab === "search" ? fetchItems : fetchLotRequests}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
@@ -306,14 +361,19 @@ const ManagerDashboard = () => {
                                   {getStatusBadge(lot.status)}
                                 </TableCell>
                                 <TableCell>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                                    onClick={() => handleRowClick(lot)}
+                                  <motion.button
+                                    whileTap={{ scale: 0.9 }}
+                                    whileHover={{ scale: 1.05 }}
                                   >
-                                    View Details
-                                  </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-all"
+                                      onClick={() => handleRowClick(lot)}
+                                    >
+                                      View Details
+                                    </Button>
+                                  </motion.button>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -344,13 +404,97 @@ const ManagerDashboard = () => {
             )}
 
             {activeTab === "search" && (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center p-8 bg-white rounded-lg shadow-sm border">
-                  <Search size={48} className="mx-auto mb-4 text-gray-400" />
-                  <h2 className="text-xl font-semibold mb-2">Search Module</h2>
-                  <p className="text-gray-500">Search functionality will be implemented here</p>
+              <>
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      placeholder="Search items by name, description or category..."
+                      className="pl-10 bg-white"
+                      value={itemSearchTerm}
+                      onChange={(e) => setItemSearchTerm(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
+
+                {isLoadingItems ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : itemsError ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                    <AlertCircle size={40} className="mb-2 text-amber-500" />
+                    <p>{itemsError}</p>
+                    <Button variant="outline" className="mt-4" onClick={fetchItems}>
+                      Try Again
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredItems.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        whileHover={{ scale: 1.02 }}
+                        className="transition-all duration-200"
+                      >
+                        <Card className="overflow-hidden h-full shadow-sm border border-gray-200 hover:shadow-md">
+                          <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                            <img
+                              src={`/api/placeholder/500/300`}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <Badge className="absolute top-3 right-3 bg-blue-500">
+                              {item.categoryName}
+                            </Badge>
+                          </div>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg font-medium">{item.name}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <p className="text-gray-600 text-sm line-clamp-2">{item.description}</p>
+
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                              <div>
+                                <Label className="text-gray-500">Quantity</Label>
+                                <div className="font-medium">{item.quantity}</div>
+                              </div>
+                              <div>
+                                <Label className="text-gray-500">Price</Label>
+                                <div className="font-medium">${item.price.toFixed(2)}</div>
+                              </div>
+                              <div>
+                                <Label className="text-gray-500">Storage</Label>
+                                <div className="font-medium">{item.storageName || "N/A"}</div>
+                              </div>
+                              <div>
+                                <Label className="text-gray-500">Expires</Label>
+                                <div className="font-medium">{formatDate(item.expiryDate)}</div>
+                              </div>
+                            </div>
+
+                            <Button
+                              variant="outline"
+                              className="w-full mt-2 flex items-center justify-center gap-2"
+                            >
+                              <Package size={16} />
+                              <span>View Details</span>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+
+                    {filteredItems.length === 0 && (
+                      <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500">
+                        <Search size={40} className="mb-2 opacity-40" />
+                        <p className="text-lg font-medium">No items found</p>
+                        <p className="text-gray-400">Try adjusting your search criteria</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
 
             {activeTab === "report" && (
