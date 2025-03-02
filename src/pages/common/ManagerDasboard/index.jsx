@@ -1,36 +1,76 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { InboxIcon, Search, FileText } from "lucide-react";
-import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { InboxIcon, Search, FileText, AlertCircle, CheckCircle, XCircle, Clock } from "lucide-react";
 
 const API_URL = "http://localhost:5090/api/lot-request";
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("requests");
   const [lotRequests, setLotRequests] = useState([]);
-  const [approvedLots, setApprovedLots] = useState([]);
+  const [filteredRequests, setFilteredRequests] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedLot, setSelectedLot] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [storageLocation, setStorageLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     fetchLotRequests();
+
+    // Set up screen size listener
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarCollapsed(true);
+      }
+    };
+
+    // Check initial screen size
+    handleResize();
+
+    // Add resize listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
+
+  useEffect(() => {
+    // Filter requests based on search term
+    if (searchTerm.trim() === "") {
+      setFilteredRequests(lotRequests);
+    } else {
+      const filtered = lotRequests.filter(
+        (lot) =>
+          lot.lotRequestId.toString().includes(searchTerm) ||
+          (lot.item?.name && lot.item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      setFilteredRequests(filtered);
+    }
+  }, [searchTerm, lotRequests]);
 
   const fetchLotRequests = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch(API_URL);
       const data = await response.json();
       setLotRequests(data);
+      setFilteredRequests(data);
     } catch (error) {
       console.error("Failed to fetch lot requests:", error);
+      setErrorMessage("Unable to load lot requests. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -38,6 +78,7 @@ const ManagerDashboard = () => {
     setSelectedLot(lot);
     setIsDialogOpen(true);
     setStorageLocation("");
+    setErrorMessage("");
   };
 
   const handleApprove = async () => {
@@ -50,21 +91,25 @@ const ManagerDashboard = () => {
         fetchLotRequests(); // Refresh the list after approval
       } catch (error) {
         console.error("Failed to approve lot request:", error);
+        setErrorMessage("Failed to approve lot request. Please try again.");
       } finally {
         setIsLoading(false);
       }
+    } else {
+      setErrorMessage("Please enter a storage location");
     }
   };
 
   const handleReject = async () => {
     setIsLoading(true);
     try {
-      await updateLotStatus(selectedLot.lotRequestId, 0, 5);
+      await updateLotStatus(selectedLot.lotRequestId, parseInt(storageLocation), 5);
       setIsDialogOpen(false);
       setSelectedLot(null);
       fetchLotRequests(); // Refresh the list after rejection
     } catch (error) {
       console.error("Failed to reject lot request:", error);
+      setErrorMessage("Failed to reject lot request. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -94,134 +139,338 @@ const ManagerDashboard = () => {
     }
   };
 
+  const getStatusBadge = (status) => {
+    // Convert status to number if it's not already
+    const statusNum = typeof status === 'string' ? parseInt(status) : status;
+
+    switch (statusNum) {
+      case 1:
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">New</Badge>;
+      case 2:
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">Pending</Badge>;
+      case 3:
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Approved</Badge>;
+      case 4:
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200">In Process</Badge>;
+      case 5:
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Rejected</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
+    }
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
     <SidebarProvider>
-      <div className="flex h-screen">
-        <div className="w-64 bg-gray-100 border-r">
+      <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+        {/* Sidebar */}
+        <div className={`bg-white border-r shadow-sm transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
           <div className="p-4">
-            <h2 className="text-xl font-bold mb-4">Manager Menu</h2>
+            <div className="flex items-center justify-between mb-6">
+              {!sidebarCollapsed && <h2 className="text-xl font-bold text-gray-800">Inventory</h2>}
+              <button
+                onClick={toggleSidebar}
+                className="p-1 rounded-md hover:bg-gray-100"
+              >
+                {sidebarCollapsed ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="13 17 18 12 13 7"></polyline>
+                    <polyline points="6 17 11 12 6 7"></polyline>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="11 17 6 12 11 7"></polyline>
+                    <polyline points="18 17 13 12 18 7"></polyline>
+                  </svg>
+                )}
+              </button>
+            </div>
             <nav className="space-y-2">
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "requests" ? "bg-primary text-white" : "hover:bg-gray-200"}`}
+                className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${activeTab === "requests"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gray-100"
+                  }`}
                 onClick={() => setActiveTab("requests")}
               >
                 <InboxIcon size={20} />
-                Lots Request
+                {!sidebarCollapsed && <span>Lot Requests</span>}
               </button>
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "search" ? "bg-primary text-white" : "hover:bg-gray-200"}`}
+                className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${activeTab === "search"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gray-100"
+                  }`}
                 onClick={() => setActiveTab("search")}
               >
                 <Search size={20} />
-                Search Lots & Items
+                {!sidebarCollapsed && <span>Search</span>}
               </button>
               <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"}`}
+                className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${activeTab === "report"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gray-100"
+                  }`}
                 onClick={() => setActiveTab("report")}
               >
                 <FileText size={20} />
-                Report
+                {!sidebarCollapsed && <span>Reports</span>}
               </button>
             </nav>
           </div>
         </div>
 
-        <div className="flex-1 p-6 overflow-auto">
-          {activeTab === "requests" && (
-            <>
-              <h1 className="text-3xl font-bold mb-6">Manager Dashboard</h1>
-              <Card className="mb-6">
-                <CardContent>
-                  <h2 className="text-xl font-semibold mb-4">Pending Lot Requests</h2>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lotRequests.map((lot) => (
-                        <TableRow
-                          key={lot.lotRequestId}
-                          className="cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleRowClick(lot)}
-                        >
-                          <TableCell>{lot.lotRequestId}</TableCell>
-                          <TableCell>{lot.status}</TableCell>
-                        </TableRow>
-                      ))}
-                      {lotRequests.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={2} className="text-center py-4">No pending requests</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </>
-          )}
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
+          {/* Header */}
+          <div className="bg-white border-b shadow-sm px-6 py-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-gray-800">
+                {activeTab === "requests" && "Lot Request Management"}
+                {activeTab === "search" && "Search Lots & Items"}
+                {activeTab === "report" && "Reports"}
+              </h1>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={fetchLotRequests}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Clock size={16} />
+                  <span>Refresh</span>
+                </Button>
+              </div>
+            </div>
+          </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
-              <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                <DialogHeader>
-                  <DialogTitle>Lot Request Details</DialogTitle>
-                </DialogHeader>
-                {selectedLot && (
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Lot ID</Label>
-                        <div className="mt-1 font-medium">{selectedLot.lotRequestId}</div>
+          {/* Content Area */}
+          <div className="flex-1 p-6 overflow-auto">
+            {activeTab === "requests" && (
+              <>
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                      placeholder="Search by ID or item name..."
+                      className="pl-10 bg-white"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <Card className="overflow-hidden border-none shadow-md h-full flex-1">
+                  <CardHeader className="bg-gray-50 border-b pb-3">
+                    <CardTitle className="text-lg font-medium">Lot Requests</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {isLoading && lotRequests.length === 0 ? (
+                      <div className="flex justify-center items-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       </div>
-                      <div>
-                        <Label>Item</Label>
-                        <div className="mt-1 font-medium">{selectedLot.item.name}</div>
+                    ) : errorMessage && lotRequests.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                        <AlertCircle size={40} className="mb-2 text-amber-500" />
+                        <p>{errorMessage}</p>
+                        <Button variant="outline" className="mt-4" onClick={fetchLotRequests}>
+                          Try Again
+                        </Button>
                       </div>
-                      <div>
-                        <Label>Quantity</Label>
-                        <div className="mt-1 font-medium">{selectedLot.item.quantity}</div>
+                    ) : (
+                      <div className="w-full overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-gray-50 hover:bg-gray-50">
+                              <TableHead className="font-medium">ID</TableHead>
+                              <TableHead className="font-medium">Item</TableHead>
+                              <TableHead className="font-medium">Quantity</TableHead>
+                              <TableHead className="font-medium">Quality</TableHead>
+                              <TableHead className="font-medium">Status</TableHead>
+                              <TableHead className="font-medium">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredRequests.map((lot) => (
+                              <TableRow
+                                key={lot.lotRequestId}
+                                className="cursor-pointer hover:bg-blue-50 transition-colors"
+                              >
+                                <TableCell className="font-medium">{lot.lotRequestId}</TableCell>
+                                <TableCell>{lot.item?.name || "N/A"}</TableCell>
+                                <TableCell>{lot.item?.quantity || "N/A"}</TableCell>
+                                <TableCell>{lot.quality || "N/A"}</TableCell>
+                                <TableCell>
+                                  {getStatusBadge(lot.status)}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                    onClick={() => handleRowClick(lot)}
+                                  >
+                                    View Details
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {filteredRequests.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={6} className="text-center py-12 text-gray-500">
+                                  {searchTerm ? (
+                                    <>
+                                      <Search size={40} className="mx-auto mb-2 opacity-40" />
+                                      <p>No matching requests found</p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <InboxIcon size={40} className="mx-auto mb-2 opacity-40" />
+                                      <p>No pending requests available</p>
+                                    </>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
                       </div>
-                      <div>
-                        <Label>Quality</Label>
-                        <div className="mt-1 font-medium">{selectedLot.quality}</div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {activeTab === "search" && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center p-8 bg-white rounded-lg shadow-sm border">
+                  <Search size={48} className="mx-auto mb-4 text-gray-400" />
+                  <h2 className="text-xl font-semibold mb-2">Search Module</h2>
+                  <p className="text-gray-500">Search functionality will be implemented here</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "report" && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center p-8 bg-white rounded-lg shadow-sm border">
+                  <FileText size={48} className="mx-auto mb-4 text-gray-400" />
+                  <h2 className="text-xl font-semibold mb-2">Reports Module</h2>
+                  <p className="text-gray-500">Reporting functionality will be implemented here</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) setErrorMessage("");
+        }}>
+          <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden rounded-lg">
+            <DialogHeader className="bg-gray-50 p-6 border-b">
+              <DialogTitle className="text-xl font-semibold">Lot Request Details</DialogTitle>
+            </DialogHeader>
+            {selectedLot && (
+              <>
+                <div className="p-6 grid gap-6">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <div>
+                      <Label className="text-gray-500 text-sm">Lot ID</Label>
+                      <div className="mt-1 font-semibold text-gray-800">{selectedLot.lotRequestId}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Status</Label>
+                      <div className="mt-1">
+                        {getStatusBadge(selectedLot.status)}
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="storage">Storage Location</Label>
-                      <Input
-                        id="storage"
-                        value={storageLocation}
-                        onChange={(e) => setStorageLocation(e.target.value)}
-                        className="mt-1"
-                        placeholder="Enter storage location ID"
-                        type="number"
-                      />
+                      <Label className="text-gray-500 text-sm">Item</Label>
+                      <div className="mt-1 font-medium">{selectedLot.item?.name || "N/A"}</div>
                     </div>
-                    <div className="flex justify-end gap-2 mt-4">
-                      <Button
-                        onClick={handleApprove}
-                        className="bg-green-500 text-white"
-                        disabled={!storageLocation.trim() || isLoading}
-                      >
-                        {isLoading ? "Processing..." : "Approve"}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={handleReject}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? "Processing..." : "Reject"}
-                      </Button>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Quantity</Label>
+                      <div className="mt-1 font-medium">{selectedLot.item?.quantity || "N/A"}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Quality</Label>
+                      <div className="mt-1 font-medium">{selectedLot.quality || "N/A"}</div>
                     </div>
                   </div>
-                )}
-              </motion.div>
-            </DialogContent>
-          </Dialog>
-        </div>
+
+                  <div className="pt-2 border-t">
+                    <Label htmlFor="storage" className="text-gray-500 text-sm">
+                      Storage Location
+                    </Label>
+                    <Input
+                      id="storage"
+                      value={storageLocation}
+                      onChange={(e) => setStorageLocation(e.target.value)}
+                      className="mt-1"
+                      placeholder="Enter storage location ID"
+                      type="number"
+                    />
+                    {errorMessage && (
+                      <p className="mt-2 text-red-600 text-sm flex items-center">
+                        <AlertCircle size={14} className="mr-1" />
+                        {errorMessage}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <DialogFooter className="bg-gray-50 p-4 border-t flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                    disabled={isLoading}
+                    className="border-gray-300"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleReject}
+                    disabled={isLoading}
+                    className="flex items-center gap-1"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center">
+                        <div className="animate-spin h-4 w-4 mr-1 border-2 border-b-transparent rounded-full"></div>
+                        Processing...
+                      </span>
+                    ) : (
+                      <>
+                        <XCircle size={16} />
+                        <span>Reject</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleApprove}
+                    className="bg-green-600 hover:bg-green-700 flex items-center gap-1"
+                    disabled={!storageLocation.trim() || isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center">
+                        <div className="animate-spin h-4 w-4 mr-1 border-2 border-b-transparent rounded-full"></div>
+                        Processing...
+                      </span>
+                    ) : (
+                      <>
+                        <CheckCircle size={16} />
+                        <span>Approve</span>
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </SidebarProvider>
   );
