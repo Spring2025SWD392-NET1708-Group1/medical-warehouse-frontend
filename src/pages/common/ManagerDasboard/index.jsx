@@ -440,7 +440,7 @@ const ManagerDashboard = () => {
                         <Card className="overflow-hidden h-full shadow-sm border border-gray-200 hover:shadow-md">
                           <div className="aspect-video bg-gray-100 relative overflow-hidden">
                             <img
-                              src={`/api/placeholder/500/300`}
+                              src="https://s3.eu-north-1.amazonaws.com/cdn-site.mediaplanet.com/app/uploads/sites/94/2024/06/07205740/AdobeStock_627493260-576x486.jpg"
                               alt={item.name}
                               className="w-full h-full object-cover"
                             />

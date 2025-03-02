@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -27,6 +27,23 @@ const StaffDashboard = () => {
     expiryDate: "",
     stockinDate: "",
   });
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    if (activeTab === "search") {
+      fetchItems();
+    }
+  }, [activeTab]);
+
+  const fetchItems = async () => {
+    try {
+      const response = await fetch("http://localhost:5090/api/items");
+      const data = await response.json();
+      setItems(data);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -174,9 +191,33 @@ const StaffDashboard = () => {
           )}
 
           {activeTab === "search" && (
-            <div className="text-center p-8">
-              <h2 className="text-xl">Search Lots & Items Component</h2>
-              <p>Search functionality coming soon...</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4">
+              {items.map((item) => (
+                <Card key={item.id} className="w-full hover:shadow-lg transition-shadow duration-300">
+                  <CardContent className="p-0">
+                    {/* Image Section */}
+                    <div className="relative h-48 w-full overflow-hidden">
+                      <img
+                        src="https://s3.eu-north-1.amazonaws.com/cdn-site.mediaplanet.com/app/uploads/sites/94/2024/06/07205740/AdobeStock_627493260-576x486.jpg"
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {/* Details Section */}
+                    <div className="p-4">
+                      <h3 className="text-xl font-semibold mb-2">{item.name}</h3>
+                      <p className="text-sm text-gray-600 mb-4">{item.description}</p>
+                      <div className="space-y-2">
+                        <p><strong>Category:</strong> {item.categoryName}</p>
+                        <p><strong>Storage:</strong> {item.storageName}</p>
+                        <p><strong>Quantity:</strong> {item.quantity}</p>
+                        <p><strong>Price:</strong> ${item.price}</p>
+                        <p><strong>Expiry Date:</strong> {new Date(item.expiryDate).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
 
