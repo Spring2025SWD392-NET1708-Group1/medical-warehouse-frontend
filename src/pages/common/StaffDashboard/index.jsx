@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { PlusCircle, Search, FileText } from "lucide-react";
+import { PlusCircle, Search as SearchIcon, FileText } from "lucide-react";
 
 const StaffDashboard = () => {
   const [activeTab, setActiveTab] = useState("lots");
@@ -28,6 +28,7 @@ const StaffDashboard = () => {
     stockinDate: "",
   });
   const [items, setItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState(""); // State for search term
 
   useEffect(() => {
     if (activeTab === "search") {
@@ -74,6 +75,11 @@ const StaffDashboard = () => {
     setLotRequests(lotRequests.map(lot => lot.id === id ? { ...lot, status: "Reported" } : lot));
   };
 
+  // Filter items based on search term
+  const filteredItems = items.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <SidebarProvider>
       <div className="flex h-screen">
@@ -94,7 +100,7 @@ const StaffDashboard = () => {
                   }`}
                 onClick={() => setActiveTab("search")}
               >
-                <Search size={20} />
+                <SearchIcon size={20} />
                 Search Lots & Items
               </button>
               <button
@@ -191,33 +197,49 @@ const StaffDashboard = () => {
           )}
 
           {activeTab === "search" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4">
-              {items.map((item) => (
-                <Card key={item.id} className="w-full hover:shadow-lg transition-shadow duration-300">
-                  <CardContent className="p-0">
-                    {/* Image Section */}
-                    <div className="relative h-48 w-full overflow-hidden">
-                      <img
-                        src="https://s3.eu-north-1.amazonaws.com/cdn-site.mediaplanet.com/app/uploads/sites/94/2024/06/07205740/AdobeStock_627493260-576x486.jpg"
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    {/* Details Section */}
-                    <div className="p-4">
-                      <h3 className="text-xl font-semibold mb-2">{item.name}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{item.description}</p>
-                      <div className="space-y-2">
-                        <p><strong>Category:</strong> {item.categoryName}</p>
-                        <p><strong>Storage:</strong> {item.storageName}</p>
-                        <p><strong>Quantity:</strong> {item.quantity}</p>
-                        <p><strong>Price:</strong> ${item.price}</p>
-                        <p><strong>Expiry Date:</strong> {new Date(item.expiryDate).toLocaleDateString()}</p>
+            <div className="space-y-6">
+              {/* Search Bar */}
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  placeholder="Search items by name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1"
+                />
+                <Button variant="outline" size="icon">
+                  <SearchIcon size={20} />
+                </Button>
+              </div>
+
+              {/* Items Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredItems.map((item) => (
+                  <Card key={item.id} className="w-full hover:shadow-lg transition-shadow duration-300">
+                    <CardContent className="p-0">
+                      {/* Image Section */}
+                      <div className="relative h-48 w-full overflow-hidden">
+                        <img
+                          src="https://s3.eu-north-1.amazonaws.com/cdn-site.mediaplanet.com/app/uploads/sites/94/2024/06/07205740/AdobeStock_627493260-576x486.jpg" alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      {/* Details Section */}
+                      <div className="p-4">
+                        <h3 className="text-xl font-semibold mb-2">{item.name}</h3>
+                        <p className="text-sm text-gray-600 mb-4">{item.description}</p>
+                        <div className="space-y-2">
+                          <p><strong>Category:</strong> {item.categoryName}</p>
+                          <p><strong>Storage:</strong> {item.storageName}</p>
+                          <p><strong>Quantity:</strong> {item.quantity}</p>
+                          <p><strong>Price:</strong> ${item.price}</p>
+                          <p><strong>Expiry Date:</strong> {new Date(item.expiryDate).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
 
