@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
+import { AuthService } from "@/services/authService";
 
 const Login = ({
   heading = "MeddiSupplyHub.com",
@@ -26,80 +27,6 @@ const Login = ({
   const [debugInfo, setDebugInfo] = useState(null);
   const navigate = useNavigate();
 
-  // Function to decode JWT token without using external libraries
-  const parseJwt = (token) => {
-    try {
-      // Get the payload part of the JWT (second part)
-      const base64Url = token.split('.')[1];
-      // Replace characters for valid base64 string
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      // Decode the base64 string
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      // Parse the JSON
-      return JSON.parse(jsonPayload);
-    } catch (error) {
-      console.error("Error parsing JWT", error);
-      return null;
-    }
-  };
-
-  const extractTokenFromResponse = (responseData) => {
-    // Log the exact response structure for debugging
-    console.log("API Response:", responseData);
-
-    // If responseData is a string, try to parse it as JSON
-    if (typeof responseData === 'string') {
-      try {
-        responseData = JSON.parse(responseData);
-      } catch (e) {
-        // If it's not valid JSON, see if it's a token directly
-        if (responseData.split('.').length === 3) {
-          return responseData; // It might be a raw JWT token
-        }
-      }
-    }
-
-    // Common response structures
-    // Case 1: {token: "..."}
-    if (responseData.token) {
-      return responseData.token;
-    }
-
-    // Case 2: {data: {token: "..."}}
-    if (responseData.data && responseData.data.token) {
-      return responseData.data.token;
-    }
-
-    // Case 3: {access_token: "..."}
-    if (responseData.access_token) {
-      return responseData.access_token;
-    }
-
-    // Case 4: {auth: {token: "..."}}
-    if (responseData.auth && responseData.auth.token) {
-      return responseData.auth.token;
-    }
-
-    // Case 5: {data: "..."} - where data is the token itself
-    if (responseData.data && typeof responseData.data === 'string' && responseData.data.split('.').length === 3) {
-      return responseData.data;
-    }
-
-    // Case 6: The response itself might be the token
-    if (typeof responseData === 'string' && responseData.split('.').length === 3) {
-      return responseData;
-    }
-
-    // Log all keys in the response for debugging
-    console.log("Response keys:", Object.keys(responseData));
-
-    return null; // No token found
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -114,125 +41,23 @@ const Login = ({
         password,
       });
 
-      // Store full response for debugging
-      setDebugInfo({
-        responseData: response.data,
-        responseKeys: Object.keys(response.data),
-        responseType: typeof response.data
-      });
+      if (response.data) {
+        // Store token in localStorage
+        localStorage.setItem("token", response.data);
 
-      // Try to extract token from various response formats
-      const token = extractTokenFromResponse(response.data);
-
-      if (!token) {
-        console.error("Token extraction failed", response.data);
-        setError("Token extraction failed. Please check console for details.");
+        // Store full response for debugging
+        setDebugInfo({
+          responseData: response.data,
+          responseKeys: Object.keys(response.data),
+          responseType: typeof response.data
+        });
+        AuthService.handleUserNavigation(navigate)
         setIsLoading(false);
-        return;
-      }
-
-      // Store token in localStorage
-      localStorage.setItem("token", token);
-
-      // Set token for all future axios requests
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      // Decode the JWT token
-      const decodedToken = parseJwt(token);
-
-      if (!decodedToken) {
-        setError("Failed to decode token. Token might be invalid.");
-        setIsLoading(false);
-        return;
-      }
-
-      // Log the decoded token for debugging
-      console.log("Decoded token:", decodedToken);
-      setDebugInfo(prev => ({ ...prev, decodedToken }));
-
-      // Extract role from token
-      // Common claim formats for role in JWT
-      const possibleRolePaths = [
-        "role",
-        "roles",
-        "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
-        "https://schemas.microsoft.com/ws/2008/06/identity/claims/role",
-        "custom:role"
-      ];
-
-      let userRole = null;
-
-      // Try to find role in any of the possible paths
-      for (const path of possibleRolePaths) {
-        if (decodedToken[path]) {
-          userRole = Array.isArray(decodedToken[path])
-            ? decodedToken[path][0]  // If it's an array, take the first role
-            : decodedToken[path];    // If it's a string, use it directly
-          console.log(`Found role in ${path}:`, userRole);
-          break;
-        }
-      }
-
-      // If no role found yet, check all properties
-      if (!userRole) {
-        console.log("Searching all token properties for role");
-        const allKeys = Object.keys(decodedToken);
-        for (const key of allKeys) {
-          const value = decodedToken[key];
-          console.log(`Checking key ${key}:`, value);
-
-          if (typeof value === 'string') {
-            // Check if the value itself is a role name
-            if (['admin', 'staff', 'manager'].includes(value.toLowerCase())) {
-              userRole = value;
-              console.log(`Found role in key ${key}:`, userRole);
-              break;
-            }
-
-            // Check if the key contains the word "role"
-            if (key.toLowerCase().includes('role')) {
-              userRole = value;
-              console.log(`Found potential role in key ${key}:`, userRole);
-              break;
-            }
-          }
-        }
-      }
-
-      if (userRole) {
-        // Normalize role to ensure consistent capitalization
-        const normalizedRole = userRole.charAt(0).toUpperCase() + userRole.slice(1).toLowerCase();
-        console.log("Normalized role:", normalizedRole);
-
-        // Store user role
-        localStorage.setItem("userRole", normalizedRole);
-
-        // Navigate based on user role
-        setIsLoading(false);
-
-        switch (normalizedRole) {
-          case "Admin":
-            navigate("/admin");
-            break;
-          case "Staff":
-            navigate("/staff");
-            break;
-          case "Manager":
-            navigate("/manager");
-            break;
-          default:
-            // If role doesn't match expected values, still allow login but warn
-            console.warn(`Unrecognized role: ${normalizedRole}`);
-            setDebugInfo(prev => ({ ...prev, warning: `Unrecognized role: ${normalizedRole}` }));
-            navigate("/");
-        }
       } else {
-        // If no role was found
-        console.error("No role found in token");
-        setError("No role found in the token. You might not have appropriate permissions.");
-        setDebugInfo(prev => ({ ...prev, error: "No role found in token" }));
+        setError('Server did not return a token.')
         setIsLoading(false);
       }
+
     } catch (error) {
       setIsLoading(false);
       console.error("Login error:", error);

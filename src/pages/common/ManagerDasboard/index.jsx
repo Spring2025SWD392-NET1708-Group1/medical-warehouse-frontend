@@ -24,6 +24,7 @@ const ManagerDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const token = localStorage.getItem("token")
 
   // Items state
   const [items, setItems] = useState([]);
@@ -92,7 +93,11 @@ const ManagerDashboard = () => {
   const fetchLotRequests = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(API_URL);
+      const response = await fetch(API_URL,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       setLotRequests(data);
       setFilteredRequests(data);
