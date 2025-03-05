@@ -13,6 +13,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { PlusCircle, Search as SearchIcon, FileText } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+
+// Predefined items with their IDs
+const ITEM_TYPES = [
+  {
+    name: "Disposable gloves",
+    id: "1bfe3b07-5419-4718-bed9-0439016c7f78"
+  },
+  {
+    name: "Antibiotic Ointment",
+    id: "3d2a1e6d-b173-4db6-a2b4-1cb8bdfb94c9"
+  },
+  {
+    name: "Pain reliever",
+    id: "80c0ac22-9f4d-478e-8fe1-f01b4e6727b0"
+  }
+];
 
 const StaffDashboard = () => {
   const [activeTab, setActiveTab] = useState("lots");
@@ -20,11 +43,11 @@ const StaffDashboard = () => {
   const [approvedLots, setApprovedLots] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newLotData, setNewLotData] = useState({
-    lotId: "",
-    item: "",
-    quantity: "",
     quality: "",
-    expiryDate: "",
+    itemId: ITEM_TYPES[0].id, // Default to first item
+    userId: "d8f0b849-d1a2-45d5-8a23-47772060c8f2",
+    storageId: 1,
+    quantity: "",
     stockinDate: "",
   });
   const [items, setItems] = useState([]);
@@ -46,33 +69,55 @@ const StaffDashboard = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newLot = {
-      id: lotRequests.length + 1,
-      status: "Pending",
-      ...newLotData,
-    };
-    setLotRequests([...lotRequests, newLot]);
-    setIsDialogOpen(false);
-    setNewLotData({
-      lotId: "",
-      item: "",
-      quantity: "",
-      quality: "",
-      expiryDate: "",
-      stockinDate: "",
-    });
+    try {
+      const response = await fetch("http://localhost:5090/api/lot-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          quality: newLotData.quality,
+          itemId: newLotData.itemId,
+          userId: newLotData.userId,
+          storageId: newLotData.storageId,
+        }),
+      });
 
-    toast.success("Lot request has been sent to Manager");
+      if (!response.ok) {
+        throw new Error("Failed to submit lot request");
+      }
+
+      const responseData = await response.json();
+
+      // Add the new lot request to the local state
+      setLotRequests(prevRequests => [...prevRequests, {
+        ...responseData,
+        item: ITEM_TYPES.find(item => item.id === newLotData.itemId)?.name,
+      }]);
+
+      // Reset form and close dialog
+      setNewLotData({
+        quality: "",
+        itemId: ITEM_TYPES[0].id,
+        userId: "d8f0b849-d1a2-45d5-8a23-47772060c8f2",
+        storageId: 1,
+        quantity: "",
+        stockinDate: "",
+      });
+      setIsDialogOpen(false);
+
+      // Show success toast
+      toast.success("Lot request submitted successfully");
+    } catch (error) {
+      console.error("Error submitting lot request:", error);
+      toast.error("Failed to submit lot request");
+    }
   };
 
   const addLotRequest = () => {
     setIsDialogOpen(true);
-  };
-
-  const reportLot = (id) => {
-    setLotRequests(lotRequests.map(lot => lot.id === id ? { ...lot, status: "Reported" } : lot));
   };
 
   // Filter items based on search term
@@ -116,7 +161,6 @@ const StaffDashboard = () => {
         </div>
 
         <div className="flex-1 p-6 overflow-auto">
-
           {activeTab === "lots" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="w-full">
@@ -126,33 +170,17 @@ const StaffDashboard = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Lot ID</TableHead>
                         <TableHead>Item</TableHead>
-                        <TableHead>Quantity</TableHead>
                         <TableHead>Quality</TableHead>
-                        <TableHead>Expiry Date</TableHead>
-                        <TableHead>Stock-in Date</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {lotRequests.map((lot) => (
                         <TableRow key={lot.id}>
-                          <TableCell>{lot.id}</TableCell>
-                          <TableCell>{lot.lotId}</TableCell>
                           <TableCell>{lot.item}</TableCell>
-                          <TableCell>{lot.quantity}</TableCell>
                           <TableCell>{lot.quality}</TableCell>
-                          <TableCell>{lot.expiryDate}</TableCell>
-                          <TableCell>{lot.stockinDate}</TableCell>
-                          <TableCell>{lot.status}</TableCell>
-                          <TableCell>
-                            {lot.status === "Pending" && (
-                              <Button variant="destructive" onClick={() => reportLot(lot.id)}>Report</Button>
-                            )}
-                          </TableCell>
+                          <TableCell>Pending</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -251,6 +279,7 @@ const StaffDashboard = () => {
           )}
         </div>
 
+        {/* Lot Request Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -258,75 +287,39 @@ const StaffDashboard = () => {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="lotId">Lot ID</Label>
-                <Input
-                  id="lotId"
-                  value={newLotData.lotId}
-                  onChange={(e) =>
-                    setNewLotData({ ...newLotData, lotId: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
                 <Label htmlFor="item">Item</Label>
-                <Input
-                  id="item"
-                  value={newLotData.item}
-                  onChange={(e) =>
-                    setNewLotData({ ...newLotData, item: e.target.value })
+                <Select
+                  value={newLotData.itemId}
+                  onValueChange={(value) =>
+                    setNewLotData(prev => ({ ...prev, itemId: value }))
                   }
-                  required
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEM_TYPES.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="quantity">Quantity</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={newLotData.quantity}
-                  onChange={(e) =>
-                    setNewLotData({ ...newLotData, quantity: e.target.value })
-                  }
-                  required
-                />
-              </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="quality">Quality</Label>
                 <Input
                   id="quality"
                   value={newLotData.quality}
                   onChange={(e) =>
-                    setNewLotData({ ...newLotData, quality: e.target.value })
+                    setNewLotData(prev => ({ ...prev, quality: e.target.value }))
                   }
                   required
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="expiryDate">Expiry Date</Label>
-                <Input
-                  id="expiryDate"
-                  type="date"
-                  value={newLotData.expiryDate}
-                  onChange={(e) =>
-                    setNewLotData({ ...newLotData, expiryDate: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="stockinDate">Stock-in Date</Label>
-                <Input
-                  id="stockinDate"
-                  type="date"
-                  value={newLotData.stockinDate}
-                  onChange={(e) =>
-                    setNewLotData({ ...newLotData, stockinDate: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <Button type="submit">Submit</Button>
+
+              <Button type="submit">Submit Lot Request</Button>
             </form>
           </DialogContent>
         </Dialog>
