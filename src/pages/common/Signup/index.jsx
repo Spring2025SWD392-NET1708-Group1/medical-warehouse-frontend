@@ -1,22 +1,65 @@
-import { FcGoogle } from "react-icons/fc"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useState } from 'react'
+import { FcGoogle } from 'react-icons/fc'
+import { Link, useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { signupService } from '@/services/signupService'
 
 const Signup = ({
-  heading = "MediSupplyHub.com",
-  subheading = "Sign up for free.",
+  heading = 'MediSupplyHub.com',
+  subheading = 'Sign up for free.',
 
   logo = {
-    url: "https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716",
-    src: "https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716",
-    alt: "logo"
+    url: 'https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716',
+    src: 'https://images-platform.99static.com//MDVqrTbdUmben2nTrA2mj8DHycw=/168x11:883x726/fit-in/500x500/99designs-contests-attachments/14/14940/attachment_14940716',
+    alt: 'logo',
   },
 
-  googleText = "Sign up with Google",
-  signupText = "Create an account",
-  loginText = "Already have an account?",
-  loginUrl = "/login"
+  googleText = 'Sign up with Google',
+  signupText = 'Create an account',
+  loginText = 'Already have an account?',
+  loginUrl = '/login',
 }) => {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phoneNumber: '',
+    roleId: '8bbdfc66-b6bb-4534-8c1c-c9a3b458ea3d', // Customer role ID
+  })
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [showVerificationPopup, setShowVerificationPopup] = useState(false)
+  const [debugInfo, setDebugInfo] = useState(null)
+  const navigate = useNavigate()
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+    setDebugInfo(null)
+
+    try {
+      const response = await signupService.register(formData)
+      console.log('Signup successful:', response)
+      setIsLoading(false)
+      setShowVerificationPopup(true)
+    } catch (error) {
+      console.error('Signup failed:', error)
+      setError('Signup failed. Please try again.')
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoToLogin = () => {
+    navigate(loginUrl)
+  }
+
   return (
     <section className="py-32 px-80">
       <div className="container">
@@ -24,43 +67,58 @@ const Signup = ({
           <div className="mx-auto w-full max-w-sm rounded-md p-6 shadow">
             <div className="mb-6 flex flex-col items-center">
               <a href={logo.url}>
-                <img
-                  src={logo.src}
-                  alt={logo.alt}
-                  className="h-20 w-20"
-                />
+                <img src={logo.src} alt={logo.alt} className="h-20 w-20" />
               </a>
               <p className="mb-2 text-2xl font-bold">{heading}</p>
               <p className="text-muted-foreground">{subheading}</p>
             </div>
-            <div>
+            <form onSubmit={handleSubmit}>
               <div className="grid gap-4">
-                <Input type="email" placeholder="Enter your email" required />
-                <div>
-                  <Input
-                    type="password"
-                    placeholder="Enter your password"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="mt-2 w-full">
-                  {signupText}
+                {error && <p className="text-red-500">{error}</p>}
+                <Input type="text" name="fullName" placeholder="Enter your full name" value={formData.fullName} onChange={handleChange} required disabled={isLoading} />
+                <Input type="email" name="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} required disabled={isLoading} />
+                <Input type="password" name="password" placeholder="Enter your password" value={formData.password} onChange={handleChange} required disabled={isLoading} />
+                <Input type="text" name="phoneNumber" placeholder="Enter your phone number" value={formData.phoneNumber} onChange={handleChange} required disabled={isLoading} />
+                <Button type="submit" className="mt-2 w-full" disabled={isLoading}>
+                  {isLoading ? 'Creating account...' : signupText}
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" disabled={isLoading}>
                   <FcGoogle className="mr-2 size-5" />
                   {googleText}
                 </Button>
               </div>
-              <div className="mx-auto mt-8 flex justify-center gap-1 text-sm text-muted-foreground">
-                <p>{loginText}</p>
-                <a href={loginUrl} className="font-medium text-primary">
-                  Log in
-                </a>
-              </div>
+            </form>
+            <div className="mx-auto mt-8 flex justify-center gap-1 text-sm text-muted-foreground">
+              <p>{loginText}</p>
+              <a href={loginUrl} className="font-medium text-primary">
+                Log in
+              </a>
             </div>
+
+            {/* Debug information (only for development) */}
+            {debugInfo && (
+              <div className="mt-4 border-t pt-4 text-xs text-gray-500">
+                <details>
+                  <summary className="cursor-pointer font-bold">Debug Info (click to expand)</summary>
+                  <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-gray-100 p-2">{JSON.stringify(debugInfo, null, 2)}</pre>
+                </details>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {showVerificationPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Verify Your Account</h2>
+            <p className="mb-4">A verification email has been sent to your email address. Please check your inbox and verify your account.</p>
+            <Button onClick={handleGoToLogin} className="w-full">
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
