@@ -29,6 +29,7 @@ const Signup = ({
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showVerificationPopup, setShowVerificationPopup] = useState(false)
   const [debugInfo, setDebugInfo] = useState(null)
   const navigate = useNavigate()
 
@@ -46,14 +47,17 @@ const Signup = ({
     try {
       const response = await signupService.register(formData)
       console.log('Signup successful:', response)
-      // Handle successful signup (e.g., navigate to login page or show success message)
       setIsLoading(false)
-      navigate(loginUrl)
+      setShowVerificationPopup(true)
     } catch (error) {
       console.error('Signup failed:', error)
       setError('Signup failed. Please try again.')
       setIsLoading(false)
     }
+  }
+
+  const handleGoToLogin = () => {
+    navigate(loginUrl)
   }
 
   return (
@@ -103,6 +107,18 @@ const Signup = ({
           </div>
         </div>
       </div>
+
+      {showVerificationPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Verify Your Account</h2>
+            <p className="mb-4">A verification email has been sent to your email address. Please check your inbox and verify your account.</p>
+            <Button onClick={handleGoToLogin} className="w-full">
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
