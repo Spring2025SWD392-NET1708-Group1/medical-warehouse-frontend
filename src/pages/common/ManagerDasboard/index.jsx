@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { InboxIcon, Search, FileText, AlertCircle, CheckCircle, XCircle, Clock, Package } from "lucide-react";
 import { motion } from "framer-motion";
 
-const API_URL = "http://localhost:5090/api/item-lots";
+const API_URL = "http://localhost:5090/api/item-lots/create-requests";
 const ITEMS_API_URL = "http://localhost:5090/api/items";
 const STORAGES_API_URL = "http://localhost:5090/api/storage"
 
@@ -21,7 +21,9 @@ const ManagerDashboard = () => {
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLot, setSelectedLot] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [storageLocation, setStorageLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -39,7 +41,7 @@ const ManagerDashboard = () => {
 
 
   useEffect(() => {
-    fetchItemLots();
+    fetchCreateItemLots();
 
     // Set up screen size listener
     const handleResize = () => {
@@ -99,7 +101,7 @@ const ManagerDashboard = () => {
     }
   }, [itemSearchTerm, items]);
 
-  const fetchItemLots = async () => {
+  const fetchCreateItemLots = async () => {
     try {
       setIsLoading(true);
       const response = await fetch(API_URL, {
@@ -163,6 +165,12 @@ const ManagerDashboard = () => {
     setErrorMessage("");
   };
 
+  const handleItemClick = (item) => {
+    setSelectedItem(item);
+    setIsDetailOpen(true);
+    setErrorMessage("");
+  }
+
   const handleApprove = async () => {
     if (storageLocation.trim()) {
       setIsLoading(true);
@@ -170,7 +178,7 @@ const ManagerDashboard = () => {
         await updateLotStatus(selectedLot.itemLotId, parseInt(storageLocation), 2);
         setIsDialogOpen(false);
         setSelectedLot(null);
-        fetchItemLots(); // Refresh the list after approval
+        fetchCreateItemLots(); // Refresh the list after approval
       } catch (error) {
         console.error("Failed to approve item lots", error);
         setErrorMessage("Failed to approve item lot. Please try again.");
@@ -180,7 +188,7 @@ const ManagerDashboard = () => {
     } else {
       setErrorMessage("Please enter a storage location");
     }
-  };  
+  };
 
   const handleReject = async () => {
     setIsLoading(true);
@@ -188,7 +196,7 @@ const ManagerDashboard = () => {
       await updateLotStatus(selectedLot.itemLotId, parseInt(storageLocation), 4);
       setIsDialogOpen(false);
       setSelectedLot(null);
-      fetchItemLots(); // Refresh the list after rejection
+      fetchCreateItemLots(); // Refresh the list after rejection
     } catch (error) {
       console.error("Failed to reject item lot:", error);
       setErrorMessage("Failed to reject item lot. Please try again.");
@@ -226,16 +234,18 @@ const ManagerDashboard = () => {
     const statusNum = typeof status === 'string' ? parseInt(status) : status;
 
     switch (statusNum) {
+      case 0:
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">In Checking</Badge>;
       case 1:
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">New</Badge>;
-      case 2:
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">Pending</Badge>;
-      case 3:
+      case 2:
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Approved</Badge>;
+      case 3:
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200">Disposed</Badge>;
       case 4:
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200">In Process</Badge>;
-      case 5:
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Rejected</Badge>;
+      case 5:
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Need Disposing</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
     }
@@ -285,7 +295,7 @@ const ManagerDashboard = () => {
                 onClick={() => setActiveTab("requests")}
               >
                 <InboxIcon size={20} />
-                {!sidebarCollapsed && <span>Item Lots</span>}
+                {!sidebarCollapsed && <span>Manage Lot Requests</span>}
               </button>
               <button
                 className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${activeTab === "search"
@@ -323,7 +333,7 @@ const ManagerDashboard = () => {
               </h1>
               <div className="flex space-x-2">
                 <Button
-                  onClick={activeTab === "search" ? fetchItems : fetchItemLots}
+                  onClick={activeTab === "search" ? fetchItems : fetchCreateItemLots}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
@@ -352,7 +362,7 @@ const ManagerDashboard = () => {
 
                 <Card className="overflow-hidden border-none shadow-md h-full flex-1">
                   <CardHeader className="bg-gray-50 border-b pb-3">
-                    <CardTitle className="text-lg font-medium">Item Lots</CardTitle>
+                    <CardTitle className="text-lg font-medium">All Create Lot Requests</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
                     {isLoading && itemLots.length === 0 ? (
@@ -363,7 +373,7 @@ const ManagerDashboard = () => {
                       <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                         <AlertCircle size={40} className="mb-2 text-amber-500" />
                         <p>{errorMessage}</p>
-                        <Button variant="outline" className="mt-4" onClick={fetchItemLots}>
+                        <Button variant="outline" className="mt-4" onClick={fetchCreateItemLots}>
                           Try Again
                         </Button>
                       </div>
@@ -490,15 +500,27 @@ const ManagerDashboard = () => {
                             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                               <div>
                                 <Label className="text-gray-500">Price</Label>
-                                <div className="font-medium">${item.pricePerUnit.toFixed(2)}</div>
+                                <div className="font-medium">${item.importPricePerUnit.toFixed(2)}</div>
                               </div>
-
+                              <div>
+                                <Label className="text-gray-500">Price</Label>
+                                <div className="font-medium">${item.exportPricePerUnit?.toFixed(2) || "N/A"}</div>
+                              </div>
+                              <div>
+                              <Label className="text-gray-500">Supplier</Label>
+                              <div className="font-medium>">{item.supplierName} </div>
+                              </div>
+                              <div>
+                                <Label className="text-gray-500">For Sale</Label>
+                                <div className="font-medium">{item.isForSale ? "Yes" : "No"}</div>
+                              </div>
                             </div>
 
                             <Button
                               variant="outline"
                               className="w-full mt-2 flex items-center justify-center gap-2"
-                            >
+                              onClick={() => handleItemClick(item)}
+                            >                             
                               <Package size={16} />
                               <span>View Details</span>
                             </Button>
@@ -565,10 +587,6 @@ const ManagerDashboard = () => {
                       <Label className="text-gray-500 text-sm">Quality</Label>
                       <div className="mt-1 font-medium">{selectedLot.quality || "N/A"}</div>
                     </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Lot Price</Label>
-                      <div className="mt-1 font-medium">{selectedLot.lotPrice.toFixed(2) || "N/A"}</div>
-                    </div>
                   </div>
 
                   <div className="pt-2 border-t">
@@ -611,7 +629,8 @@ const ManagerDashboard = () => {
                   <Button
                     variant="destructive"
                     onClick={handleReject}
-                    disabled={isLoading}
+                    disabled={selectedLot.status !== "Pending" || isLoading}
+
                     className="flex items-center gap-1"
                   >
                     {isLoading ? (
@@ -648,6 +667,71 @@ const ManagerDashboard = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isDetailOpen} onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) setErrorMessage("");
+        }}>
+          <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden rounded-lg">
+            <DialogHeader className="bg-gray-50 p-6 border-b">
+              <DialogTitle className="text-xl font-semibold">Item Details</DialogTitle>
+            </DialogHeader>
+            {selectedItem && (
+              <>
+                <div className="p-6 grid gap-6">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <div>
+                      <Label className="text-gray-500 text-sm">Lot ID</Label>
+                      <div className="mt-1 font-semibold text-gray-800">{selectedItem.id}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Item Name</Label>
+                      <div className="mt-1 font-semibold text-gray-800">{selectedItem.name}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Description</Label>
+                      <div className="mt-1 font-medium">{selectedItem.description || "N/A"}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Import Price (Unit)</Label>
+                      <div className="mt-1 font-medium">{selectedItem.importPricePerUnit || "N/A"}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Export Price (Unit)</Label>
+                      <div className="mt-1 font-medium">{selectedItem.exportPricePerUnit || "N/A"}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">For Sale</Label>
+                      <div className="mt-1 font-medium">{selectedItem.isForSale? "Yes" : "No"}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="bg-gray-50 p-4 border-t flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDetailOpen(false)}
+                    disabled={isLoading}
+                    className="border-gray-300"
+                  >
+                    Return
+                  </Button>
+                  <Button
+                    onClick={handleApprove}
+                    className="bg-green-600 hover:bg-green-700 flex items-center gap-1"
+                  >
+                      <>
+                        <CheckCircle size={16} />
+                        <span>Update</span>
+                      </>
+                  </Button>
+                  
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+        
       </div>
     </SidebarProvider>
   );
