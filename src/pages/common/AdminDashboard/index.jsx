@@ -3,7 +3,7 @@ import axios from "axios";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Users, Search, FileText } from "lucide-react";
 
-const API_URL = "http://localhost:5000/api/admin/users"; // Cập nhật URL phù hợp với API .NET của bạn
+const API_URL = "http://localhost:5090/api/admin/users"; // Cập nhật URL phù hợp với API .NET của bạn
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
