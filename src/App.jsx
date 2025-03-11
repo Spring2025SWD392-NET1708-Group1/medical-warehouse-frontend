@@ -15,13 +15,14 @@ import { AdminLayout } from "./layouts/AdminLayout";
 
 // Import the toast and Toaster from 'sonner'
 import { Toaster } from 'sonner';
+import CustomerPage from "./pages/common/CustomerPage";
 
 function App() {
   return (
     <Router>
       {/* Place Toaster here, within the Router */}
-      <Toaster position="top-right"/> {/* This component will show the toast notifications */}
-      
+      <Toaster position="top-right" /> {/* This component will show the toast notifications */}
+
       <Routes>
         <Route element={<CommonLayout />}>
           <Route index path="/" element={<Homepage />} />
@@ -35,6 +36,7 @@ function App() {
           <Route path="/staff" element={<StaffDashboard />} ></Route>
           <Route path="/manager" element={<ManagerDashboard />} ></Route>
           <Route path="/track-inventory" element={<TrackInventoryMovement />} ></Route>
+          <Route path="/customer" element={<CustomerPage />}></Route>
         </Route>
       </Routes>
     </Router>
