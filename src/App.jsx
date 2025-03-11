@@ -12,29 +12,33 @@ import ManagerDashboard from "./pages/common/ManagerDasboard";
 import TrackInventoryMovement from "./pages/common/TrackInventoryMovement";
 import AdminDashBoard from "./pages/common/AdminDashboard";
 import { AdminLayout } from "./layouts/AdminLayout";
-function App() {
 
+// Import the toast and Toaster from 'sonner'
+import { Toaster } from 'sonner';
+
+function App() {
   return (
-    <>
-      <Router>
-        <Routes>
-          <Route element={<CommonLayout />}>
-            <Route index path="/" element={<Homepage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} ></Route>
-            <Route path="/update-password" element={<UpdatePassword />} ></Route>
-            <Route path="/item" element={<MedicalItemList />} ></Route>
-            <Route path="/admin" element={<AdminDashBoard />} ></Route>
-            <Route path="/staff" element={<StaffDashboard />} ></Route>
-            <Route path="/manager" element={<ManagerDashboard />} ></Route>
-            <Route path="/track-inventory" element={<TrackInventoryMovement />} ></Route>
-          </Route>
-        </Routes>
-      </Router>
-    </>
+    <Router>
+      {/* Place Toaster here, within the Router */}
+      <Toaster position="top-right"/> {/* This component will show the toast notifications */}
+      
+      <Routes>
+        <Route element={<CommonLayout />}>
+          <Route index path="/" element={<Homepage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} ></Route>
+          <Route path="/update-password" element={<UpdatePassword />} ></Route>
+          <Route path="/item" element={<MedicalItemList />} ></Route>
+          <Route path="/admin" element={<AdminDashBoard />} ></Route>
+          <Route path="/staff" element={<StaffDashboard />} ></Route>
+          <Route path="/manager" element={<ManagerDashboard />} ></Route>
+          <Route path="/track-inventory" element={<TrackInventoryMovement />} ></Route>
+        </Route>
+      </Routes>
+    </Router>
   )
 }
 
-export default App
+export default App;

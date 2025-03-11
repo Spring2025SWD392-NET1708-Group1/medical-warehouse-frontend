@@ -10,21 +10,26 @@ import { Badge } from "@/components/ui/badge";
 import { InboxIcon, Search, FileText, AlertCircle, CheckCircle, XCircle, Clock, Package } from "lucide-react";
 import { motion } from "framer-motion";
 
-const API_URL = "http://localhost:5090/api/lot-request";
+const API_URL = "http://localhost:5090/api/item-lots/create-requests";
 const ITEMS_API_URL = "http://localhost:5090/api/items";
+const STORAGES_API_URL = "http://localhost:5090/api/storage"
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("requests");
-  const [lotRequests, setLotRequests] = useState([]);
+  const [itemLots, setItemLots] = useState([]);
+  const [storages, setStorages] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLot, setSelectedLot] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [storageLocation, setStorageLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const token = localStorage.getItem("token")
+
 
   // Items state
   const [items, setItems] = useState([]);
@@ -33,8 +38,10 @@ const ManagerDashboard = () => {
   const [isLoadingItems, setIsLoadingItems] = useState(false);
   const [itemsError, setItemsError] = useState("");
 
+
+
   useEffect(() => {
-    fetchLotRequests();
+    fetchCreateItemLots();
 
     // Set up screen size listener
     const handleResize = () => {
@@ -62,18 +69,22 @@ const ManagerDashboard = () => {
   }, [activeTab]);
 
   useEffect(() => {
+    fetchStorages();
+  }, []);
+
+  useEffect(() => {
     // Filter requests based on search term
     if (searchTerm.trim() === "") {
-      setFilteredRequests(lotRequests);
+      setFilteredRequests(itemLots);
     } else {
-      const filtered = lotRequests.filter(
+      const filtered = itemLots.filter(
         (lot) =>
-          lot.lotRequestId.toString().includes(searchTerm) ||
+          lot.itemLotId.toString().includes(searchTerm) ||
           (lot.item?.name && lot.item.name.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredRequests(filtered);
     }
-  }, [searchTerm, lotRequests]);
+  }, [searchTerm, itemLots]);
 
   useEffect(() => {
     // Filter items based on item search term
@@ -90,20 +101,39 @@ const ManagerDashboard = () => {
     }
   }, [itemSearchTerm, items]);
 
-  const fetchLotRequests = async () => {
+  const fetchCreateItemLots = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(API_URL,{
+      const response = await fetch(API_URL, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       const data = await response.json();
-      setLotRequests(data);
+      setItemLots(data);
       setFilteredRequests(data);
     } catch (error) {
-      console.error("Failed to fetch lot requests:", error);
-      setErrorMessage("Unable to load lot requests. Please try again later.");
+      console.error("Failed to fetch item lots:", error);
+      setErrorMessage("Unable to load item lots. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchStorages = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(STORAGES_API_URL, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setStorages(data);
+      setFilteredRequests(data);
+    } catch (error) {
+      console.error("Failed to fetch storages:", error);
+      setErrorMessage("Unable to load storages. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -135,17 +165,23 @@ const ManagerDashboard = () => {
     setErrorMessage("");
   };
 
+  const handleItemClick = (item) => {
+    setSelectedItem(item);
+    setIsDetailOpen(true);
+    setErrorMessage("");
+  }
+
   const handleApprove = async () => {
     if (storageLocation.trim()) {
       setIsLoading(true);
       try {
-        await updateLotStatus(selectedLot.lotRequestId, parseInt(storageLocation), 3);
+        await updateLotStatus(selectedLot.itemLotId, parseInt(storageLocation), 2);
         setIsDialogOpen(false);
         setSelectedLot(null);
-        fetchLotRequests(); // Refresh the list after approval
+        fetchCreateItemLots(); // Refresh the list after approval
       } catch (error) {
-        console.error("Failed to approve lot request:", error);
-        setErrorMessage("Failed to approve lot request. Please try again.");
+        console.error("Failed to approve item lots", error);
+        setErrorMessage("Failed to approve item lot. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -157,13 +193,13 @@ const ManagerDashboard = () => {
   const handleReject = async () => {
     setIsLoading(true);
     try {
-      await updateLotStatus(selectedLot.lotRequestId, parseInt(storageLocation), 5);
+      await updateLotStatus(selectedLot.itemLotId, parseInt(storageLocation), 4);
       setIsDialogOpen(false);
       setSelectedLot(null);
-      fetchLotRequests(); // Refresh the list after rejection
+      fetchCreateItemLots(); // Refresh the list after rejection
     } catch (error) {
-      console.error("Failed to reject lot request:", error);
-      setErrorMessage("Failed to reject lot request. Please try again.");
+      console.error("Failed to reject item lot:", error);
+      setErrorMessage("Failed to reject item lot. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -198,16 +234,18 @@ const ManagerDashboard = () => {
     const statusNum = typeof status === 'string' ? parseInt(status) : status;
 
     switch (statusNum) {
+      case 0:
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">In Checking</Badge>;
       case 1:
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">New</Badge>;
-      case 2:
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">Pending</Badge>;
-      case 3:
+      case 2:
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Approved</Badge>;
+      case 3:
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200">Disposed</Badge>;
       case 4:
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200">In Process</Badge>;
-      case 5:
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Rejected</Badge>;
+      case 5:
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Need Disposing</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
     }
@@ -257,7 +295,7 @@ const ManagerDashboard = () => {
                 onClick={() => setActiveTab("requests")}
               >
                 <InboxIcon size={20} />
-                {!sidebarCollapsed && <span>Lot Requests</span>}
+                {!sidebarCollapsed && <span>Manage Lot Requests</span>}
               </button>
               <button
                 className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${activeTab === "search"
@@ -289,13 +327,13 @@ const ManagerDashboard = () => {
           <div className="bg-white border-b shadow-sm px-6 py-4">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-800">
-                {activeTab === "requests" && "Lot Request Management"}
+                {activeTab === "requests" && "Item Lot Management"}
                 {activeTab === "search" && "Search Items"}
                 {activeTab === "report" && "Reports"}
               </h1>
               <div className="flex space-x-2">
                 <Button
-                  onClick={activeTab === "search" ? fetchItems : fetchLotRequests}
+                  onClick={activeTab === "search" ? fetchItems : fetchCreateItemLots}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
@@ -324,18 +362,18 @@ const ManagerDashboard = () => {
 
                 <Card className="overflow-hidden border-none shadow-md h-full flex-1">
                   <CardHeader className="bg-gray-50 border-b pb-3">
-                    <CardTitle className="text-lg font-medium">Lot Requests</CardTitle>
+                    <CardTitle className="text-lg font-medium">All Create Lot Requests</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {isLoading && lotRequests.length === 0 ? (
+                    {isLoading && itemLots.length === 0 ? (
                       <div className="flex justify-center items-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       </div>
-                    ) : errorMessage && lotRequests.length === 0 ? (
+                    ) : errorMessage && itemLots.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                         <AlertCircle size={40} className="mb-2 text-amber-500" />
                         <p>{errorMessage}</p>
-                        <Button variant="outline" className="mt-4" onClick={fetchLotRequests}>
+                        <Button variant="outline" className="mt-4" onClick={fetchCreateItemLots}>
                           Try Again
                         </Button>
                       </div>
@@ -355,12 +393,12 @@ const ManagerDashboard = () => {
                           <TableBody>
                             {filteredRequests.map((lot) => (
                               <TableRow
-                                key={lot.lotRequestId}
+                                key={lot.itemLotId}
                                 className="cursor-pointer hover:bg-blue-50 transition-colors"
                               >
-                                <TableCell className="font-medium">{lot.lotRequestId}</TableCell>
+                                <TableCell className="font-medium">{lot.itemLotId}</TableCell>
                                 <TableCell>{lot.item?.name || "N/A"}</TableCell>
-                                <TableCell>{lot.item?.quantity || "N/A"}</TableCell>
+                                <TableCell>{lot.quantity || "N/A"}</TableCell>
                                 <TableCell>{lot.quality || "N/A"}</TableCell>
                                 <TableCell>
                                   {getStatusBadge(lot.status)}
@@ -461,27 +499,28 @@ const ManagerDashboard = () => {
 
                             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                               <div>
-                                <Label className="text-gray-500">Quantity</Label>
-                                <div className="font-medium">{item.quantity}</div>
+                                <Label className="text-gray-500">Price</Label>
+                                <div className="font-medium">${item.importPricePerUnit.toFixed(2)}</div>
                               </div>
                               <div>
                                 <Label className="text-gray-500">Price</Label>
-                                <div className="font-medium">${item.price.toFixed(2)}</div>
+                                <div className="font-medium">${item.exportPricePerUnit?.toFixed(2) || "N/A"}</div>
                               </div>
                               <div>
-                                <Label className="text-gray-500">Storage</Label>
-                                <div className="font-medium">{item.storageName || "N/A"}</div>
+                              <Label className="text-gray-500">Supplier</Label>
+                              <div className="font-medium>">{item.supplierName} </div>
                               </div>
                               <div>
-                                <Label className="text-gray-500">Expires</Label>
-                                <div className="font-medium">{formatDate(item.expiryDate)}</div>
+                                <Label className="text-gray-500">For Sale</Label>
+                                <div className="font-medium">{item.isForSale ? "Yes" : "No"}</div>
                               </div>
                             </div>
 
                             <Button
                               variant="outline"
                               className="w-full mt-2 flex items-center justify-center gap-2"
-                            >
+                              onClick={() => handleItemClick(item)}
+                            >                             
                               <Package size={16} />
                               <span>View Details</span>
                             </Button>
@@ -520,7 +559,7 @@ const ManagerDashboard = () => {
         }}>
           <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden rounded-lg">
             <DialogHeader className="bg-gray-50 p-6 border-b">
-              <DialogTitle className="text-xl font-semibold">Lot Request Details</DialogTitle>
+              <DialogTitle className="text-xl font-semibold">Item Lot Details</DialogTitle>
             </DialogHeader>
             {selectedLot && (
               <>
@@ -528,7 +567,7 @@ const ManagerDashboard = () => {
                   <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <div>
                       <Label className="text-gray-500 text-sm">Lot ID</Label>
-                      <div className="mt-1 font-semibold text-gray-800">{selectedLot.lotRequestId}</div>
+                      <div className="mt-1 font-semibold text-gray-800">{selectedLot.itemLotId}</div>
                     </div>
                     <div>
                       <Label className="text-gray-500 text-sm">Status</Label>
@@ -542,7 +581,7 @@ const ManagerDashboard = () => {
                     </div>
                     <div>
                       <Label className="text-gray-500 text-sm">Quantity</Label>
-                      <div className="mt-1 font-medium">{selectedLot.item?.quantity || "N/A"}</div>
+                      <div className="mt-1 font-medium">{selectedLot.quantity || "N/A"}</div>
                     </div>
                     <div>
                       <Label className="text-gray-500 text-sm">Quality</Label>
@@ -554,14 +593,21 @@ const ManagerDashboard = () => {
                     <Label htmlFor="storage" className="text-gray-500 text-sm">
                       Storage Location
                     </Label>
-                    <Input
+                    <select
                       id="storage"
                       value={storageLocation}
                       onChange={(e) => setStorageLocation(e.target.value)}
-                      className="mt-1"
-                      placeholder="Enter storage location ID"
-                      type="number"
-                    />
+                      className="mt-1 p-2 border rounded"
+                    >
+                      <option value="" disabled>
+                        Select a Storage
+                      </option>
+                      {storages.map((storage) => (
+                        <option key={storage.id} value={storage.id}>
+                          {storage.name}
+                        </option>
+                      ))}
+                    </select>
                     {errorMessage && (
                       <p className="mt-2 text-red-600 text-sm flex items-center">
                         <AlertCircle size={14} className="mr-1" />
@@ -583,7 +629,8 @@ const ManagerDashboard = () => {
                   <Button
                     variant="destructive"
                     onClick={handleReject}
-                    disabled={isLoading}
+                    disabled={selectedLot.status !== "Pending" || isLoading}
+
                     className="flex items-center gap-1"
                   >
                     {isLoading ? (
@@ -620,6 +667,71 @@ const ManagerDashboard = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isDetailOpen} onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) setErrorMessage("");
+        }}>
+          <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden rounded-lg">
+            <DialogHeader className="bg-gray-50 p-6 border-b">
+              <DialogTitle className="text-xl font-semibold">Item Details</DialogTitle>
+            </DialogHeader>
+            {selectedItem && (
+              <>
+                <div className="p-6 grid gap-6">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <div>
+                      <Label className="text-gray-500 text-sm">Lot ID</Label>
+                      <div className="mt-1 font-semibold text-gray-800">{selectedItem.id}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Item Name</Label>
+                      <div className="mt-1 font-semibold text-gray-800">{selectedItem.name}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Description</Label>
+                      <div className="mt-1 font-medium">{selectedItem.description || "N/A"}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Import Price (Unit)</Label>
+                      <div className="mt-1 font-medium">{selectedItem.importPricePerUnit || "N/A"}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Export Price (Unit)</Label>
+                      <div className="mt-1 font-medium">{selectedItem.exportPricePerUnit || "N/A"}</div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">For Sale</Label>
+                      <div className="mt-1 font-medium">{selectedItem.isForSale? "Yes" : "No"}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="bg-gray-50 p-4 border-t flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDetailOpen(false)}
+                    disabled={isLoading}
+                    className="border-gray-300"
+                  >
+                    Return
+                  </Button>
+                  <Button
+                    onClick={handleApprove}
+                    className="bg-green-600 hover:bg-green-700 flex items-center gap-1"
+                  >
+                      <>
+                        <CheckCircle size={16} />
+                        <span>Update</span>
+                      </>
+                  </Button>
+                  
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+        
       </div>
     </SidebarProvider>
   );
