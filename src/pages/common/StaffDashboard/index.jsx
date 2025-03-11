@@ -42,12 +42,9 @@ const StaffDashboard = () => {
   const [searchTerm, setSearchTerm] = useState(""); // State for search term
   const [isItemDetailOpen, setIsItemDetailOpen] = useState(false);
 
-
-
   const token = localStorage.getItem("token");
   const storageName = jwtDecode(token).storageName;
-  const storageId = jwtDecode(token).storageId;
-
+  const storageId = parseInt(jwtDecode(token).storageId, 10);
 
 
   useEffect(() => {
