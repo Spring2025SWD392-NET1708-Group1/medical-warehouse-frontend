@@ -7,6 +7,23 @@ import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { AuthService } from "@/services/authService";
 
+// Helper function to decode JWT
+const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error decoding JWT:", error);
+    return null;
+  }
+};
+
 const Login = ({
   heading = "MeddiSupplyHub.com",
   subheading = "Welcome back",
@@ -27,7 +44,6 @@ const Login = ({
   const [debugInfo, setDebugInfo] = useState(null);
   const navigate = useNavigate();
 
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -42,19 +58,36 @@ const Login = ({
       });
 
       if (response.data) {
+        const token = response.data;
+
         // Store token in localStorage
-        localStorage.setItem("token", response.data);
+        localStorage.setItem("token", token);
+
+        // Decode the JWT and extract user info
+        const decodedToken = decodeJWT(token);
+
+        if (decodedToken) {
+          // Store user information in localStorage
+          localStorage.setItem("user", JSON.stringify({
+            role: decodedToken.role || decodedToken.Role || "User",
+            email: decodedToken.email || decodedToken.Email || email,
+            name: decodedToken.name || decodedToken.Name || email.split('@')[0],
+            // You can add more user properties here if they exist in your token
+          }));
+        }
 
         // Store full response for debugging
         setDebugInfo({
           responseData: response.data,
           responseKeys: Object.keys(response.data),
-          responseType: typeof response.data
+          responseType: typeof response.data,
+          decodedToken: decodedToken
         });
-        AuthService.handleUserNavigation(navigate)
+
+        AuthService.handleUserNavigation(navigate);
         setIsLoading(false);
       } else {
-        setError('Server did not return a token.')
+        setError('Server did not return a token.');
         setIsLoading(false);
       }
 
