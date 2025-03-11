@@ -67,6 +67,9 @@ const ManagerDashboard = () => {
     if (activeTab === "search") {
       fetchItems();
     }
+    if (activeTab === "requests") {
+      fetchCreateItemLots();
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -185,28 +188,24 @@ const ManagerDashboard = () => {
   }
 
   const handleApprove = async () => {
-    if (storageLocation.trim()) {
-      setIsLoading(true);
-      try {
-        await updateLotStatus(selectedLot.itemLotId, parseInt(storageLocation), 2);
-        setIsDialogOpen(false);
-        setSelectedLot(null);
-        fetchCreateItemLots(); // Refresh the list after approval
-      } catch (error) {
-        console.error("Failed to approve item lots", error);
-        setErrorMessage("Failed to approve item lot. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setErrorMessage("Please enter a storage location");
+    setIsLoading(true);
+    try {
+      await updateLotStatus(selectedLot.itemLotId, 2);
+      setIsDialogOpen(false);
+      setSelectedLot(null);
+      fetchCreateItemLots(); // Refresh the list after approval
+    } catch (error) {
+      console.error("Failed to approve item lots", error);
+      setErrorMessage("Failed to approve item lot. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleReject = async () => {
     setIsLoading(true);
     try {
-      await updateLotStatus(selectedLot.itemLotId, parseInt(storageLocation), 4);
+      await updateLotStatus(selectedLot.itemLotId, 4);
       setIsDialogOpen(false);
       setSelectedLot(null);
       fetchCreateItemLots(); // Refresh the list after rejection
@@ -218,7 +217,7 @@ const ManagerDashboard = () => {
     }
   };
 
-  const updateLotStatus = async (id, storageId, status) => {
+  const updateLotStatus = async (id, status) => {
     try {
       const response = await fetch(`${API_URL}/${id}`, {
         method: 'PUT',
@@ -227,7 +226,6 @@ const ManagerDashboard = () => {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          storageId: storageId,
           status: status
         }),
       });
