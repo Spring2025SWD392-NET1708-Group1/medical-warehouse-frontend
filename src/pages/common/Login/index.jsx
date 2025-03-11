@@ -26,6 +26,7 @@ const Login = ({
   const [isLoading, setIsLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState(null);
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
 
   const handleLogin = async (e) => {
@@ -42,6 +43,7 @@ const Login = ({
       });
 
       if (response.data) {
+        localStorage.removeItem("token");
         // Store token in localStorage
         localStorage.setItem("token", response.data);
 

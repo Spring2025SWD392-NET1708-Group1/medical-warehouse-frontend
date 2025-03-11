@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { InboxIcon, Search, FileText, AlertCircle, CheckCircle, XCircle, Clock, Package } from "lucide-react";
 import { motion } from "framer-motion";
 
-const API_URL = "http://localhost:5090/api/item-lots/create-requests";
+const CREATE_REQUEST_API_URL = "http://localhost:5090/api/item-lots/create-requests";
 const ITEMS_API_URL = "http://localhost:5090/api/items";
 const STORAGES_API_URL = "http://localhost:5090/api/storage"
+const API_URL = "http://localhost:5090/api/item-lots";
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("requests");
@@ -72,6 +73,12 @@ const ManagerDashboard = () => {
     fetchStorages();
   }, []);
 
+
+  useEffect(() => {
+    console.log("Selected Item Data after set:", selectedItem);  // Log the state after setting
+
+  }, [selectedItem]);
+
   useEffect(() => {
     // Filter requests based on search term
     if (searchTerm.trim() === "") {
@@ -104,7 +111,7 @@ const ManagerDashboard = () => {
   const fetchCreateItemLots = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(API_URL, {
+      const response = await fetch(CREATE_REQUEST_API_URL, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -143,7 +150,12 @@ const ManagerDashboard = () => {
     try {
       setIsLoadingItems(true);
       setItemsError("");
-      const response = await fetch(ITEMS_API_URL);
+      const response = await fetch(ITEMS_API_URL, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+      });
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
       }
@@ -160,6 +172,7 @@ const ManagerDashboard = () => {
 
   const handleRowClick = (lot) => {
     setSelectedLot(lot);
+    console.log(lot);
     setIsDialogOpen(true);
     setStorageLocation("");
     setErrorMessage("");
@@ -211,6 +224,7 @@ const ManagerDashboard = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           storageId: storageId,
@@ -239,13 +253,19 @@ const ManagerDashboard = () => {
       case 1:
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">Pending</Badge>;
       case 2:
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">In Storage</Badge>;
       case 3:
         return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200">Disposed</Badge>;
       case 4:
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Rejected</Badge>;
       case 5:
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Need Disposing</Badge>;
+      case 6:
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">To Be Imported</Badge>;
+      case 7:
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">To Be Exported</Badge>;
+      case 8:
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Reserved</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
     }
@@ -387,6 +407,7 @@ const ManagerDashboard = () => {
                               <TableHead className="font-medium">Quantity</TableHead>
                               <TableHead className="font-medium">Quality</TableHead>
                               <TableHead className="font-medium">Status</TableHead>
+                              <TableHead className="font-medium">Storage Name</TableHead>
                               <TableHead className="font-medium">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -403,6 +424,7 @@ const ManagerDashboard = () => {
                                 <TableCell>
                                   {getStatusBadge(lot.status)}
                                 </TableCell>
+                                <TableCell>{lot.storageName || "N/A"}</TableCell>
                                 <TableCell>
                                   <motion.button
                                     whileTap={{ scale: 0.9 }}
@@ -507,8 +529,8 @@ const ManagerDashboard = () => {
                                 <div className="font-medium">${item.exportPricePerUnit?.toFixed(2) || "N/A"}</div>
                               </div>
                               <div>
-                              <Label className="text-gray-500">Supplier</Label>
-                              <div className="font-medium>">{item.supplierName} </div>
+                                <Label className="text-gray-500">Supplier</Label>
+                                <div className="font-medium>">{item.supplierName} </div>
                               </div>
                               <div>
                                 <Label className="text-gray-500">For Sale</Label>
@@ -520,7 +542,7 @@ const ManagerDashboard = () => {
                               variant="outline"
                               className="w-full mt-2 flex items-center justify-center gap-2"
                               onClick={() => handleItemClick(item)}
-                            >                             
+                            >
                               <Package size={16} />
                               <span>View Details</span>
                             </Button>
@@ -587,9 +609,13 @@ const ManagerDashboard = () => {
                       <Label className="text-gray-500 text-sm">Quality</Label>
                       <div className="mt-1 font-medium">{selectedLot.quality || "N/A"}</div>
                     </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Storage Location</Label>
+                      <div className="mt-1 font-medium">{selectedLot.storageName || "N/A"}</div>
+                    </div>
                   </div>
 
-                  <div className="pt-2 border-t">
+                  {/* <div className="pt-2 border-t">
                     <Label htmlFor="storage" className="text-gray-500 text-sm">
                       Storage Location
                     </Label>
@@ -614,7 +640,7 @@ const ManagerDashboard = () => {
                         {errorMessage}
                       </p>
                     )}
-                  </div>
+                  </div> */}
                 </div>
 
                 <DialogFooter className="bg-gray-50 p-4 border-t flex justify-end gap-3">
@@ -648,7 +674,7 @@ const ManagerDashboard = () => {
                   <Button
                     onClick={handleApprove}
                     className="bg-green-600 hover:bg-green-700 flex items-center gap-1"
-                    disabled={!storageLocation.trim() || isLoading}
+                    disabled={selectedLot.status !== "Pending" || isLoading}
                   >
                     {isLoading ? (
                       <span className="flex items-center">
@@ -702,7 +728,7 @@ const ManagerDashboard = () => {
                     </div>
                     <div>
                       <Label className="text-gray-500 text-sm">For Sale</Label>
-                      <div className="mt-1 font-medium">{selectedItem.isForSale? "Yes" : "No"}</div>
+                      <div className="mt-1 font-medium">{selectedItem.isForSale ? "Yes" : "No"}</div>
                     </div>
                   </div>
                 </div>
@@ -720,18 +746,18 @@ const ManagerDashboard = () => {
                     onClick={handleApprove}
                     className="bg-green-600 hover:bg-green-700 flex items-center gap-1"
                   >
-                      <>
-                        <CheckCircle size={16} />
-                        <span>Update</span>
-                      </>
+                    <>
+                      <CheckCircle size={16} />
+                      <span>Update</span>
+                    </>
                   </Button>
-                  
+
                 </DialogFooter>
               </>
             )}
           </DialogContent>
         </Dialog>
-        
+
       </div>
     </SidebarProvider>
   );

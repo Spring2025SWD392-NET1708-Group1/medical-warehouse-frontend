@@ -27,6 +27,7 @@ import { jwtDecode } from "jwt-decode";
 const StaffDashboard = () => {
   const [activeTab, setActiveTab] = useState("lots");
   const [lotRequests, setLotRequests] = useState([]);
+  const [storageLots, setStorageLots] = useState([]);
   const [approvedLots, setApprovedLots] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -45,6 +46,7 @@ const StaffDashboard = () => {
 
   const token = localStorage.getItem("token");
   const storageName = jwtDecode(token).storageName;
+  const storageId = jwtDecode(token).storageId;
 
 
 
@@ -54,6 +56,9 @@ const StaffDashboard = () => {
     }
     if (activeTab === "lots") {
       fetchLotRequests();
+    }
+    if(activeTab === "storage"){
+      fetchStorageLots();
     }
   }, [activeTab]);
 
@@ -68,6 +73,21 @@ const StaffDashboard = () => {
       });
       const data = await response.json();
       setLotRequests(data);
+    } catch (error) {
+      console.error("Error fetching item lots:", error);
+      return [];
+    }
+  };
+
+  const fetchStorageLots = async () => {
+    try {
+      const response = await fetch(`http://localhost:5090/api/item-lots/storage/${storageId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      setStorageLots(data);
     } catch (error) {
       console.error("Error fetching item lots:", error);
       return [];
@@ -105,6 +125,7 @@ const StaffDashboard = () => {
         quality: newLotData.quality,
         quantity: newLotData.quantity,
         itemId: selectedItem.id,
+        storageId: storageId,
         expiryDate: newLotData.expiryDate,
       });
       const response = await fetch("http://localhost:5090/api/item-lots", {
@@ -117,6 +138,7 @@ const StaffDashboard = () => {
           quality: newLotData.quality,
           quantity: newLotData.quantity,
           itemId: selectedItem.id,
+          storageId: storageId,
           expiryDate: newLotData.expiryDate,
         }),
       });
@@ -183,8 +205,18 @@ const StaffDashboard = () => {
                 onClick={() => setActiveTab("search")}
               >
                 <SearchIcon size={20} />
-                Search Lots & Items
+                Import Lot Data
               </button>
+
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "storage" ? "bg-primary text-white" : "hover:bg-gray-200"
+                  }`}
+                onClick={() => setActiveTab("storage")}
+              >
+                <FileText size={20} />
+                All Storage Lots
+              </button>
+
               <button
                 className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"
                   }`}
@@ -264,6 +296,43 @@ const StaffDashboard = () => {
               </Card>
             </div>
           )}
+
+          {activeTab === "storage" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="w-full col-span-2">
+                <CardContent>
+                  <h2 className="text-xl font-semibold mb-4 text-center">All Storage {storageName} Lots</h2>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Lot ID</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Quality</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Storage</TableHead>
+                        <TableHead>Expiry Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {storageLots.map((lot) => (
+                        <TableRow key={lot.itemLotId}>
+                          <TableCell>{lot.itemLotId}</TableCell>
+                          <TableCell>{lot.item.name}</TableCell>
+                          <TableCell>{lot.quality}</TableCell>
+                          <TableCell>{lot.quantity}</TableCell>
+                          <TableCell>{lot.status}</TableCell>
+                          <TableCell>{lot.storageName ?? "N/A"}</TableCell>
+                          <TableCell>{new Date(lot.expiryDate).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
 
           {activeTab === "search" && (
             <div className="space-y-6">
