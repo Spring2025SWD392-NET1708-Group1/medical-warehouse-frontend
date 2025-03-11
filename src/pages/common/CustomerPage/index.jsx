@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -29,14 +29,20 @@ import {
   FileText,
   CircleHelp,
   Settings,
-  Truck
+  Truck,
+  Loader2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 const CustomerPage = () => {
-  // Sample data - this would come from your API in a real application
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Sample data for orders
   const recentOrders = [
     { id: 'ORD-001', date: '2025-03-10', items: 5, status: 'Completed', total: '$1,245.00' },
     { id: 'ORD-002', date: '2025-03-09', items: 2, status: 'Processing', total: '$345.50' },
@@ -44,12 +50,37 @@ const CustomerPage = () => {
     { id: 'ORD-004', date: '2025-03-05', items: 1, status: 'Pending', total: '$75.20' }
   ];
 
-  const popularItems = [
-    { name: 'Surgical Masks', category: 'PPE', stock: 1240, price: '$12.99' },
-    { name: 'Insulin Vials', category: 'Medication', stock: 85, price: '$145.50' },
-    { name: 'Digital Thermometers', category: 'Devices', stock: 320, price: '$32.75' },
-    { name: 'Nitrile Gloves (Box)', category: 'PPE', stock: 540, price: '$18.99' }
-  ];
+  // Fetch items from API
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5090/api/items');
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setItems(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching items:', err);
+        setError('Failed to load medical items. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItems();
+  }, []);
+
+  // Filter items based on search term
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -67,6 +98,8 @@ const CustomerPage = () => {
               type="search"
               placeholder="Search items..."
               className="w-full pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -135,7 +168,7 @@ const CustomerPage = () => {
             <div className="flex space-x-2">
               <Button variant="outline" size="sm">
                 <ShoppingCart className="h-4 w-4 mr-2" />
-                Cart (3)
+                Cart (0)
               </Button>
               <Button size="sm">My Account</Button>
             </div>
@@ -180,8 +213,10 @@ const CustomerPage = () => {
                   <CardTitle className="text-sm font-medium">Available Items</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12,543</div>
-                  <p className="text-xs text-gray-500">Across 8 categories</p>
+                  <div className="text-2xl font-bold">{items.length}</div>
+                  <p className="text-xs text-gray-500">
+                    {loading ? 'Loading...' : `Across ${[...new Set(items.map(item => item.categoryName))].length} categories`}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -218,11 +253,80 @@ const CustomerPage = () => {
 
             {/* Tabs Section */}
             <div className="md:col-span-3">
-              <Tabs defaultValue="orders">
+              <Tabs defaultValue="items">
                 <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="items">Medical Items</TabsTrigger>
                   <TabsTrigger value="orders">Recent Orders</TabsTrigger>
-                  <TabsTrigger value="popular">Popular Items</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="items" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Available Medical Items</CardTitle>
+                      <CardDescription>Browse our catalog of medical supplies</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {loading ? (
+                        <div className="flex justify-center items-center py-8">
+                          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                          <span className="ml-2">Loading items...</span>
+                        </div>
+                      ) : error ? (
+                        <div className="text-center py-8 text-red-500">
+                          <p>{error}</p>
+                          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+                            Try Again
+                          </Button>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Item Name</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead>Category</TableHead>
+                              <TableHead>Supplier</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead className="text-right">Price</TableHead>
+                              <TableHead></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredItems.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={7} className="text-center py-6">
+                                  {searchTerm ? 'No items match your search criteria' : 'No items available'}
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              filteredItems.map((item) => (
+                                <TableRow key={item.id}>
+                                  <TableCell className="font-medium">{item.name}</TableCell>
+                                  <TableCell>{item.description}</TableCell>
+                                  <TableCell>{item.categoryName}</TableCell>
+                                  <TableCell>{item.supplierName}</TableCell>
+                                  <TableCell>{item.itemType}</TableCell>
+                                  <TableCell className="text-right">${item.exportPricePerUnit.toFixed(2)}</TableCell>
+                                  <TableCell>
+                                    <Button size="sm" variant="outline">Add to Cart</Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </CardContent>
+                    {!loading && !error && filteredItems.length > 0 && (
+                      <CardFooter className="flex justify-between">
+                        <div>
+                          <span className="text-sm text-gray-500">Showing {filteredItems.length} of {items.length} items</span>
+                        </div>
+                        <Button variant="outline" size="sm">View All Items</Button>
+                      </CardFooter>
+                    )}
+                  </Card>
+                </TabsContent>
 
                 <TabsContent value="orders" className="mt-4">
                   <Card>
@@ -266,40 +370,6 @@ const CustomerPage = () => {
                     </CardContent>
                     <CardFooter>
                       <Button variant="outline" size="sm">View All Orders</Button>
-                    </CardFooter>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="popular" className="mt-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Popular Medical Items</CardTitle>
-                      <CardDescription>Most frequently ordered supplies</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Item Name</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>In Stock</TableHead>
-                            <TableHead className="text-right">Price</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {popularItems.map((item, index) => (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">{item.name}</TableCell>
-                              <TableCell>{item.category}</TableCell>
-                              <TableCell>{item.stock}</TableCell>
-                              <TableCell className="text-right">{item.price}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                    <CardFooter>
-                      <Button variant="outline" size="sm">View Full Catalog</Button>
                     </CardFooter>
                   </Card>
                 </TabsContent>
