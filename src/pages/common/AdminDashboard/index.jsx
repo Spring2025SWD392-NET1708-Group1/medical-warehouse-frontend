@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {  Card } from "@/components/ui/card";
 import { CardContent } from "@/components/ui/card";
 
-const API_URL = "http://localhost:5090/api/admin/users"; // Cập nhật URL phù hợp với API .NET của bạn
+const API_URL = "http://localhost:5090/api/user"; // Cập nhật URL phù hợp với API .NET của bạn
 const API_ITEMS = "http://localhost:5090/api/items";
 const API_LOT_REQUEST = "http://localhost:5090/api/lot-request";
 
