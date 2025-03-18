@@ -27,7 +27,10 @@ export const AuthService = {
         navigate('/manager')
       } else if (userData.role === 'Customer') {
         navigate('/customer')
+      } else if (userData.role === 'Supplier') {
+        navigate('/supplier')
       }
+
     } catch (error) {
       console.error('Error decoding token or navigating:', error)
     }

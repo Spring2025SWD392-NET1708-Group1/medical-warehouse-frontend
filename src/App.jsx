@@ -16,6 +16,7 @@ import { AdminLayout } from "./layouts/AdminLayout";
 // Import the toast and Toaster from 'sonner'
 import { Toaster } from 'sonner';
 import CustomerPage from "./pages/common/CustomerPage";
+import SupplierDashboard from "./pages/common/SupplierDashboard";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           <Route path="/admin" element={<AdminDashBoard />} ></Route>
           <Route path="/staff" element={<StaffDashboard />} ></Route>
           <Route path="/manager" element={<ManagerDashboard />} ></Route>
+          <Route path="/supplier" element={<SupplierDashboard />} ></Route>
           <Route path="/track-inventory" element={<TrackInventoryMovement />} ></Route>
           <Route path="/customer" element={<CustomerPage />}></Route>
         </Route>
