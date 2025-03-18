@@ -1,422 +1,524 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { PlusCircle, Search as SearchIcon, FileText } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { decodeToken } from "@/utils/decodeJWT";
-import { jwtDecode } from "jwt-decode";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
+// Import icons
+import { Package, ClipboardList, CheckCircle, XCircle, BarChart4, HelpCircle, Search } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
+
+const API_URL = "http://localhost:5090/api/item-lots/storage/requests";
+const INVENTORY_API_URL = "http://localhost:5090/api/inventory";
 
 const StaffDashboard = () => {
-  const [activeTab, setActiveTab] = useState("lots");
-  const [lotRequests, setLotRequests] = useState([]);
-  const [approvedLots, setApprovedLots] = useState([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [newLotData, setNewLotData] = useState({
-    quality: "",
-    itemId: "", // Default to first item
-    storageId: "",
-    quantity: "",
-    expiryDate: "",
-  });
-  const [items, setItems] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(""); // State for search term
-  const [isItemDetailOpen, setIsItemDetailOpen] = useState(false);
-
-
-
+  const [activeView, setActiveView] = useState('overview');
+  const [assignedLots, setAssignedLots] = useState([]);
+  const [selectedLot, setSelectedLot] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const token = localStorage.getItem("token");
+  const staffId = jwtDecode(token).staffId;
   const storageName = jwtDecode(token).storageName;
 
-
+  // Dialog states
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (activeTab === "search") {
-      fetchItems();
-    }
-    if (activeTab === "lots") {
-      fetchLotRequests();
-    }
-  }, [activeTab]);
+    fetchAssignedLots();
+  }, []);
 
-  
-
-  const fetchLotRequests = async () => {
+  const fetchAssignedLots = async () => {
     try {
-      const response = await fetch("http://localhost:5090/api/item-lots/storage/requests", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      setLotRequests(data);
-    } catch (error) {
-      console.error("Error fetching item lots:", error);
-      return [];
-    }
-  };
-
-
-  const fetchItems = async () => {
-    try {
-      const response = await fetch("http://localhost:5090/api/items", {
+      setIsLoading(true);
+      const response = await fetch(`${API_URL}/staff/${staffId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`); // Throw an error if the response is not ok
-      }
-
       const data = await response.json();
-      setItems(data);
+      setAssignedLots(data);
     } catch (error) {
-      console.error("Error fetching items:", error);
-      toast.error("Error fetching items");
-      throw error;  // Rethrow the error so it can be caught in addNewLot
+      console.error("Failed to fetch assigned lots:", error);
+      setErrorMessage("Unable to load assigned lots. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleRowClick = (lot) => {
+    setSelectedLot(lot);
+    setIsDetailsDialogOpen(true);
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleConfirmStorage = async () => {
+    setIsLoading(true);
     try {
-      // Log the request body to the console
-      console.log("Request body:", {
-        quality: newLotData.quality,
-        quantity: newLotData.quantity,
-        itemId: selectedItem.id,
-        expiryDate: newLotData.expiryDate,
-      });
-      const response = await fetch("http://localhost:5090/api/item-lots", {
-        method: "POST",
+      // Update inventory
+      await updateInventory(selectedLot.itemLotId);
+      // Update lot status to completed
+      await updateLotStatus(selectedLot.itemLotId, 6); // 6 = Completed
+      setIsDetailsDialogOpen(false);
+      setSelectedLot(null);
+      fetchAssignedLots();
+      toast.success("Storage confirmed successfully");
+    } catch (error) {
+      console.error("Failed to confirm storage:", error);
+      setErrorMessage("Failed to confirm storage. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateInventory = async (lotId) => {
+    try {
+      const response = await fetch(`${INVENTORY_API_URL}/update`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          quality: newLotData.quality,
-          quantity: newLotData.quantity,
-          itemId: selectedItem.id,
-          expiryDate: newLotData.expiryDate,
+          lotId: lotId
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create new Item Lot");
+        throw new Error(`Error: ${response.status}`);
       }
 
-      // Add the new lot request to the local state
-      await fetchLotRequests();
-
-
-      // Show success toast
-      toast.success("Lot request submitted successfully");
+      return await response.json();
     } catch (error) {
-      console.error("Error submitting lot request:", error);
-      toast.error("Failed to submit lot request");
-    }
-    finally {
-      // Reset form and close dialog
-      setIsDialogOpen(false);
-      setSelectedItem(null);
-      setNewLotData({});
+      console.error("Error updating inventory:", error);
+      throw error;
     }
   };
 
-  const addNewLot = async () => {
+  const updateLotStatus = async (id, status) => {
     try {
-      setIsDialogOpen(true);  // Open dialog only if the fetch is successful
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status: status
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      console.error("Error when fetching", error);
-      // Do not open the dialog in case of error
+      console.error("Error updating lot status:", error);
+      throw error;
     }
   };
 
-  useEffect(() => {
-    console.log("Selected Item Data after set:", selectedItem);  // Log the state after setting
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 5:
+        return <Badge className="bg-indigo-100 text-indigo-800">Assigned</Badge>;
+      case 6:
+        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+    }
+  };
 
-  }, [selectedItem]);
+  // Sidebar navigation options
+  const sidebarOptions = [
+    { id: 'overview', label: 'Overview', icon: <BarChart4 className="h-5 w-5" /> },
+    { id: 'assigned', label: 'Assigned Lots', icon: <ClipboardList className="h-5 w-5" /> },
+    { id: 'inventory', label: 'Inventory', icon: <Package className="h-5 w-5" /> },
+    { id: 'process-flow', label: 'Process Flow', icon: <HelpCircle className="h-5 w-5" /> },
+  ];
 
-  // Filter items based on search term
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter assigned lots based on search term
+  const filteredLots = assignedLots.filter(
+    (lot) =>
+      lot.itemLotId.toString().includes(searchTerm) ||
+      (lot.item?.name && lot.item.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  return (
-    <SidebarProvider>
-      <div className="flex h-screen">
-        <div className="w-64 bg-gray-100 border-r">
-          <div className="p-4">
-            <h2 className="text-xl font-bold mb-4">Staff Menu</h2>
-            <nav className="space-y-2">
-              <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "lots" ? "bg-primary text-white" : "hover:bg-gray-200"
-                  }`}
-                onClick={() => setActiveTab("lots")}
-              >
-                <PlusCircle size={20} />
-                Lot Requests
-              </button>
-              <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "search" ? "bg-primary text-white" : "hover:bg-gray-200"
-                  }`}
-                onClick={() => setActiveTab("search")}
-              >
-                <SearchIcon size={20} />
-                Search Lots & Items
-              </button>
-              <button
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === "report" ? "bg-primary text-white" : "hover:bg-gray-200"
-                  }`}
-                onClick={() => setActiveTab("report")}
-              >
-                <FileText size={20} />
-                Report
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        <div className="flex-1 p-6 overflow-auto">
-          <h2 className="text-xl font-semibold mb-4">Storage {storageName}</h2>
-          {activeTab === "lots" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="w-full col-span-2">
+  // Render content based on active view
+  const renderContent = () => {
+    switch (activeView) {
+      case 'overview':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Assigned Lots</CardTitle>
+                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
                 <CardContent>
-                  <h2 className="text-xl font-semibold mb-4 text-center">All Lot Requests</h2>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Lot ID</TableHead>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Quality</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Storage</TableHead>
-                        <TableHead>Expiry Date</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lotRequests.map((lot) => (
-                        <TableRow key={lot.itemLotId}>
-                          <TableCell>{lot.itemLotId}</TableCell>
-                          <TableCell>{lot.item.name}</TableCell>
-                          <TableCell>{lot.quality}</TableCell>
-                          <TableCell>{lot.quantity}</TableCell>
-                          <TableCell>{lot.status}</TableCell>
-                          <TableCell>{lot.storageName ?? "N/A"}</TableCell>
-                          <TableCell>{new Date(lot.expiryDate).toLocaleDateString()}</TableCell>
-
-                          {/* Button to handle actions based on the status */}
-                          <TableCell>
-                            {lot.status === "ToBeImport" && (
-                              <Button onClick={() => handleImportConfirm(lot.itemLotId, "Confirm Check")} className="btn btn-primary">
-                                Confirm Check
-                              </Button>
-                            )}
-                            {lot.status === "NeedDisposing" && (
-                              <Button onClick={() => handleDispose(lot.itemLotId, "Confirm Disposal")} className="btn btn-danger">
-                                Confirm Disposal
-                              </Button>
-                            )}
-                            {lot.status === "Rejected" && (
-                              <Button onClick={() => handleRemove(lot.itemLotId, "Confirm Return")} className="btn btn-warning">
-                                Confirm Remove
-                              </Button>
-                            )}
-                            {lot.status === "Pending" && (
-                              <Button
-                                onClick={() => {
-                                  setIsItemDetailOpen(true);       // Trigger the function to add a new lot
-                                  setSelectedItem(lot.item);  // Set the selected lot (you can pass the selected lot data if needed)
-                                }} className="btn btn-warning"
-                              >
-                                View Item Info
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="text-2xl font-bold">
+                    {assignedLots.filter(lot => lot.status === 5).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Pending storage</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Completed Lots</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {assignedLots.filter(lot => lot.status === 6).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Successfully stored</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Storage Location</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {storageName}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Your assigned area</p>
                 </CardContent>
               </Card>
             </div>
-          )}
+            
+            <h3 className="text-xl font-bold mb-4">Recent Assignments</h3>
+            <Table>
+              <TableCaption>Your most recent assigned lots</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Request ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {assignedLots.slice(0, 5).map((lot) => (
+                  <TableRow key={lot.itemLotId}>
+                    <TableCell>{lot.itemLotId}</TableCell>
+                    <TableCell>{new Date(lot.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{lot.item?.name || "N/A"}</TableCell>
+                    <TableCell>{getStatusBadge(lot.status)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleRowClick(lot)}
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        );
 
-          {activeTab === "search" && (
-            <div className="space-y-6">
-              {/* Search Bar */}
-              <div className="flex items-center gap-2">
+      case 'assigned':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Assigned Lots</h2>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <Input
-                  type="text"
-                  placeholder="Search items by name..."
+                  placeholder="Search by ID or item name..."
+                  className="pl-10 bg-white"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1"
                 />
-                <Button variant="outline" size="icon">
-                  <SearchIcon size={20} />
-                </Button>
               </div>
-
-              {/* Items Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-
-                {filteredItems.map((item) => (
-                  <Card key={item.id} className="w-full hover:shadow-lg transition-shadow duration-300">
-                    <CardContent className="p-0">
-                      {/* Image Section */}
-                      <div className="relative h-48 w-full overflow-hidden">
-                        <img
-                          src="https://s3.eu-north-1.amazonaws.com/cdn-site.mediaplanet.com/app/uploads/sites/94/2024/06/07205740/AdobeStock_627493260-576x486.jpg" alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      {/* Details Section */}
-                      <div className="p-4">
-                        <h3 className="text-xl font-semibold mb-2">{item.name}</h3>
-                        <p className="text-sm text-gray-600 mb-4">{item.description}</p>
-                        <div className="space-y-2">
-                          <p><strong>Category:</strong> {item.categoryName}</p>
-                          <p><strong>Supplier:</strong> {item.supplierName}</p>
-                          <p><strong>Import Price per Unit:</strong> {item.importPricePerUnit.toFixed(2)}$</p>
-                          <p><strong>Export Price Per Unit:</strong> {item.exportPricePerUnit ? `${item.exportPricePerUnit.toFixed(2)}$` : "N/A"}</p>
-                          <p><strong>Available For Sale:</strong> {item.isForSale ? "Yes" : "No"}</p>
-                        </div>
-                        <div className="mt-5">
-                          <Button
-                            onClick={() => {
-                              console.log("Selected Item Data before set:", item);  // Check the structure before setting
-                              setSelectedItem(item);  // Set the selected item
-                              addNewLot();  // Trigger the function to add a new lot)
-                            }}
-                            className="mb-4">Create new Lot
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+            </div>
+            <Table>
+              <TableCaption>A list of all assigned lots</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Request ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLots.map((lot) => (
+                  <TableRow key={lot.itemLotId}>
+                    <TableCell>{lot.itemLotId}</TableCell>
+                    <TableCell>{new Date(lot.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{lot.item?.name || "N/A"}</TableCell>
+                    <TableCell>{lot.quantity || "N/A"}</TableCell>
+                    <TableCell>{getStatusBadge(lot.status)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleRowClick(lot)}
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-            </div>
-          )}
+              </TableBody>
+            </Table>
+          </>
+        );
 
-          {activeTab === "report" && (
-            <div className="text-center p-8">
-              <h2 className="text-xl">Report Component</h2>
-              <p>Report functionality coming soon...</p>
+      case 'inventory':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Inventory Management</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Current Inventory</CardTitle>
+                <CardDescription>
+                  View and manage inventory in your assigned storage location
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center p-8">
+                  <h3 className="text-xl font-semibold mb-4">Inventory Management</h3>
+                  <p>Inventory management functionality coming soon...</p>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        );
+
+      case 'process-flow':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Storage Process Flow</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Understanding the Process</CardTitle>
+                <CardDescription>
+                  How to handle assigned lots and update inventory
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                      <span className="text-blue-700 font-bold">1</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Receive Assignment</h3>
+                    <p className="text-sm text-gray-600">Get assigned to store items</p>
+                  </div>
+                  
+                  <div className="hidden md:block self-center">→</div>
+                  <div className="block md:hidden self-center">↓</div>
+                  
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mb-2">
+                      <span className="text-yellow-700 font-bold">2</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Verify Items</h3>
+                    <p className="text-sm text-gray-600">Check quantity and quality</p>
+                  </div>
+                  
+                  <div className="hidden md:block self-center">→</div>
+                  <div className="block md:hidden self-center">↓</div>
+                  
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
+                      <span className="text-green-700 font-bold">3</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Store Items</h3>
+                    <p className="text-sm text-gray-600">Place items in assigned location</p>
+                  </div>
+                  
+                  <div className="hidden md:block self-center">→</div>
+                  <div className="block md:hidden self-center">↓</div>
+                  
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2">
+                      <span className="text-purple-700 font-bold">4</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Update Inventory</h3>
+                    <p className="text-sm text-gray-600">Confirm storage completion</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Detailed Process Description</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-bold text-lg mb-2">1. Receive Assignment</h3>
+                  <p>You will be assigned to handle the storage of specific items in your designated storage location.</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">2. Verify Items</h3>
+                  <p>Before storing, verify the quantity and quality of the items match the request details.</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">3. Store Items</h3>
+                  <p>Place the items in the assigned storage location following proper organization guidelines.</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">4. Update Inventory</h3>
+                  <p>Confirm the storage completion to update the inventory system.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        );
+
+      default:
+        return <div>Select an option from the sidebar</div>;
+    }
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row">
+      {/* Sidebar for desktop */}
+      <div className="hidden md:block md:w-64 border-r border-gray-200 bg-background">
+        <div className="sticky top-0 h-screen pt-4 pb-16 overflow-y-auto flex flex-col">
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-bold">Staff Portal</h2>
+            <p className="text-sm text-muted-foreground mt-1">{storageName}</p>
+          </div>
+          <nav className="flex-1 p-4 space-y-2">
+            {sidebarOptions.map((option) => (
+              <Button
+                key={option.id}
+                variant={activeView === option.id ? "secondary" : "ghost"}
+                className="w-full justify-start gap-2 text-left h-10"
+                onClick={() => setActiveView(option.id)}
+              >
+                {option.icon}
+                {option.label}
+              </Button>
+            ))}
+          </nav>
+          <div className="p-4 border-t mt-auto">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Package className="h-4 w-4" />
+              <span>Medical Warehouse System</span>
             </div>
-          )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile header and main content */}
+      <div className="flex-1">
+        {/* Mobile header */}
+        <div className="md:hidden sticky top-0 z-10 border-b bg-background">
+          <div className="flex items-center justify-between p-4">
+            <div>
+              <h2 className="text-xl font-bold">Staff Portal</h2>
+              <p className="text-sm text-muted-foreground">{storageName}</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto border-t">
+            <div className="flex py-2 px-4">
+              {sidebarOptions.map((option) => (
+                <Button
+                  key={option.id}
+                  variant={activeView === option.id ? "secondary" : "ghost"}
+                  size="sm"
+                  className="mr-2 flex-none whitespace-nowrap"
+                  onClick={() => setActiveView(option.id)}
+                >
+                  <span className="flex items-center">
+                    {option.icon}
+                    <span className="ml-2">{option.label}</span>
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Lot Request Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Lot Request</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="quality">Item</Label>
-                <Input
-                  id="itemId"
-                  key={selectedItem ? selectedItem.id : ''}
-                  value={selectedItem ? selectedItem.name : ''}
-                  readOnly
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="quality">Lot Quality</Label>
-                <Input
-                  id="quality"
-                  value={newLotData.quality}
-                  onChange={(e) =>
-                    setNewLotData(prev => ({ ...prev, quality: e.target.value }))
-                  }
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="quantity">Lot Quantity {selectedItem && selectedItem.itemType ? `(${selectedItem.itemType})` : ''}</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={newLotData.quantity}
-                  onChange={(e) =>
-                    setNewLotData(prev => ({ ...prev, quantity: e.target.value }))
-                  }
-                  required
-                  min="1"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="expiryDate">Expiry Date</Label>
-                <Input
-                  id="expiryDate"
-                  type="date"
-                  value={newLotData.expiryDate}
-                  onChange={(e) =>
-                    setNewLotData(prev => ({ ...prev, expiryDate: e.target.value }))
-                  }
-                  required
-                />
-              </div>
-              <Button type="submit">Submit Create Lot Request</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isItemDetailOpen} onOpenChange={(open) => {
-          setIsItemDetailOpen(open);
-          if (!open) {
-            setSelectedItem({});
-          }
-        }}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Item Details</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              {/* Item details content */}
-              <p><strong>Category:</strong> {selectedItem ? selectedItem.categoryName : 'Loading...'}</p>
-              <p><strong>Description:</strong> {selectedItem ? selectedItem.description : 'Loading...'}</p>
-              <p><strong>Supplier:</strong> {selectedItem ? selectedItem.supplierName : 'Loading...'}</p>
-              <p><strong>Import Price per Unit:</strong> {selectedItem ? selectedItem.importPricePerUnit.toFixed(2) + '$' : 'Loading...'}</p>
-              <p><strong>Export Price Per Unit:</strong> {selectedItem ? (selectedItem.exportPricePerUnit ? selectedItem.exportPricePerUnit.toFixed(2) + '$' : 'N/A') : 'Loading...'}</p>
-              <p><strong>Available For Sale:</strong> {selectedItem ? (selectedItem.isForSale ? 'Yes' : 'No') : 'Loading...'}</p>
-            </div>
-            <Button onClick={() => setIsItemDetailOpen(false)}>Close</Button>
-          </DialogContent>
-        </Dialog>
-
+        {/* Main content */}
+        <div className="container mx-auto p-6 max-w-6xl">
+          {renderContent()}
+        </div>
       </div>
-    </SidebarProvider>
+
+      {/* Lot Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Lot Details</DialogTitle>
+            <DialogDescription>
+              Review lot details and confirm storage
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLot && (
+            <>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Request ID</Label>
+                    <div className="font-medium">{selectedLot.itemLotId}</div>
+                  </div>
+                  <div>
+                    <Label>Item</Label>
+                    <div className="font-medium">{selectedLot.item?.name}</div>
+                  </div>
+                  <div>
+                    <Label>Quantity</Label>
+                    <div className="font-medium">{selectedLot.quantity}</div>
+                  </div>
+                  <div>
+                    <Label>Quality</Label>
+                    <div className="font-medium">{selectedLot.quality}</div>
+                  </div>
+                  <div>
+                    <Label>Storage Location</Label>
+                    <div className="font-medium">{selectedLot.storageName}</div>
+                  </div>
+                  <div>
+                    <Label>Expiry Date</Label>
+                    <div className="font-medium">
+                      {new Date(selectedLot.expiryDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleConfirmStorage}
+                  disabled={selectedLot.status === 6}
+                >
+                  Confirm Storage
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

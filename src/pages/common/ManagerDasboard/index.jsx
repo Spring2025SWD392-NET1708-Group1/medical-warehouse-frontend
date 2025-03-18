@@ -1,107 +1,47 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { InboxIcon, Search, FileText, AlertCircle, CheckCircle, XCircle, Clock, Package } from "lucide-react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+
+// Import icons
+import { Package, ClipboardList, CheckCircle, XCircle, BarChart4, HelpCircle, DollarSign, UserPlus } from 'lucide-react';
 
 const API_URL = "http://localhost:5090/api/item-lots/create-requests";
-const ITEMS_API_URL = "http://localhost:5090/api/items";
-const STORAGES_API_URL = "http://localhost:5090/api/storage"
+const STORAGES_API_URL = "http://localhost:5090/api/storage";
+const STAFF_API_URL = "http://localhost:5090/api/staff";
 
 const ManagerDashboard = () => {
-  const [activeTab, setActiveTab] = useState("requests");
+  const [activeView, setActiveView] = useState('overview');
   const [itemLots, setItemLots] = useState([]);
   const [storages, setStorages] = useState([]);
-  const [filteredRequests, setFilteredRequests] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [staffMembers, setStaffMembers] = useState([]);
   const [selectedLot, setSelectedLot] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [storageLocation, setStorageLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const token = localStorage.getItem("token")
+  const token = localStorage.getItem("token");
 
-
-  // Items state
-  const [items, setItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
-  const [itemSearchTerm, setItemSearchTerm] = useState("");
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const [itemsError, setItemsError] = useState("");
-
-
+  // Dialog states
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
+  const [selectedStorage, setSelectedStorage] = useState("");
+  const [selectedStaff, setSelectedStaff] = useState("");
 
   useEffect(() => {
-    fetchCreateItemLots();
-
-    // Set up screen size listener
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setSidebarCollapsed(true);
-      }
-    };
-
-    // Check initial screen size
-    handleResize();
-
-    // Add resize listener
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "search") {
-      fetchItems();
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
+    fetchItemLots();
     fetchStorages();
+    fetchStaffMembers();
   }, []);
 
-  useEffect(() => {
-    // Filter requests based on search term
-    if (searchTerm.trim() === "") {
-      setFilteredRequests(itemLots);
-    } else {
-      const filtered = itemLots.filter(
-        (lot) =>
-          lot.itemLotId.toString().includes(searchTerm) ||
-          (lot.item?.name && lot.item.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-      setFilteredRequests(filtered);
-    }
-  }, [searchTerm, itemLots]);
-
-  useEffect(() => {
-    // Filter items based on item search term
-    if (itemSearchTerm.trim() === "") {
-      setFilteredItems(items);
-    } else {
-      const filtered = items.filter(
-        (item) =>
-          item.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
-          (item.description && item.description.toLowerCase().includes(itemSearchTerm.toLowerCase())) ||
-          (item.categoryName && item.categoryName.toLowerCase().includes(itemSearchTerm.toLowerCase()))
-      );
-      setFilteredItems(filtered);
-    }
-  }, [itemSearchTerm, items]);
-
-  const fetchCreateItemLots = async () => {
+  const fetchItemLots = async () => {
     try {
       setIsLoading(true);
       const response = await fetch(API_URL, {
@@ -111,7 +51,6 @@ const ManagerDashboard = () => {
       });
       const data = await response.json();
       setItemLots(data);
-      setFilteredRequests(data);
     } catch (error) {
       console.error("Failed to fetch item lots:", error);
       setErrorMessage("Unable to load item lots. Please try again later.");
@@ -122,7 +61,6 @@ const ManagerDashboard = () => {
 
   const fetchStorages = async () => {
     try {
-      setIsLoading(true);
       const response = await fetch(STORAGES_API_URL, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -130,73 +68,67 @@ const ManagerDashboard = () => {
       });
       const data = await response.json();
       setStorages(data);
-      setFilteredRequests(data);
     } catch (error) {
       console.error("Failed to fetch storages:", error);
-      setErrorMessage("Unable to load storages. Please try again later.");
-    } finally {
-      setIsLoading(false);
+      toast.error("Unable to load storage locations");
     }
   };
 
-  const fetchItems = async () => {
+  const fetchStaffMembers = async () => {
     try {
-      setIsLoadingItems(true);
-      setItemsError("");
-      const response = await fetch(ITEMS_API_URL);
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
+      const response = await fetch(STAFF_API_URL, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       const data = await response.json();
-      setItems(data);
-      setFilteredItems(data);
+      setStaffMembers(data);
     } catch (error) {
-      console.error("Failed to fetch items:", error);
-      setItemsError("Unable to load items. Please try again later.");
-    } finally {
-      setIsLoadingItems(false);
+      console.error("Failed to fetch staff members:", error);
+      toast.error("Unable to load staff members");
     }
   };
 
   const handleRowClick = (lot) => {
     setSelectedLot(lot);
-    setIsDialogOpen(true);
-    setStorageLocation("");
-    setErrorMessage("");
+    if (lot.status === 2) { // Approved
+      setIsAssignmentDialogOpen(true);
+    } else if (lot.status === 1) { // Pending
+      setIsReviewDialogOpen(true);
+    } else if (lot.status === 3) { // Paid
+      setIsPaymentDialogOpen(true);
+    }
   };
 
-  const handleItemClick = (item) => {
-    setSelectedItem(item);
-    setIsDetailOpen(true);
-    setErrorMessage("");
-  }
-
   const handleApprove = async () => {
-    if (storageLocation.trim()) {
-      setIsLoading(true);
-      try {
-        await updateLotStatus(selectedLot.itemLotId, parseInt(storageLocation), 2);
-        setIsDialogOpen(false);
-        setSelectedLot(null);
-        fetchCreateItemLots(); // Refresh the list after approval
-      } catch (error) {
-        console.error("Failed to approve item lots", error);
-        setErrorMessage("Failed to approve item lot. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setErrorMessage("Please enter a storage location");
+    if (!selectedStorage.trim()) {
+      setErrorMessage("Please select a storage location");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await updateLotStatus(selectedLot.itemLotId, parseInt(selectedStorage), 2);
+      setIsReviewDialogOpen(false);
+      setSelectedLot(null);
+      fetchItemLots();
+      toast.success("Request approved successfully");
+    } catch (error) {
+      console.error("Failed to approve item lot:", error);
+      setErrorMessage("Failed to approve item lot. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleReject = async () => {
     setIsLoading(true);
     try {
-      await updateLotStatus(selectedLot.itemLotId, parseInt(storageLocation), 4);
-      setIsDialogOpen(false);
+      await updateLotStatus(selectedLot.itemLotId, null, 4);
+      setIsReviewDialogOpen(false);
       setSelectedLot(null);
-      fetchCreateItemLots(); // Refresh the list after rejection
+      fetchItemLots();
+      toast.success("Request rejected successfully");
     } catch (error) {
       console.error("Failed to reject item lot:", error);
       setErrorMessage("Failed to reject item lot. Please try again.");
@@ -205,16 +137,55 @@ const ManagerDashboard = () => {
     }
   };
 
-  const updateLotStatus = async (id, storageId, status) => {
+  const handlePayment = async () => {
+    setIsLoading(true);
+    try {
+      await updateLotStatus(selectedLot.itemLotId, null, 3);
+      setIsPaymentDialogOpen(false);
+      setSelectedLot(null);
+      fetchItemLots();
+      toast.success("Payment processed successfully");
+    } catch (error) {
+      console.error("Failed to process payment:", error);
+      setErrorMessage("Failed to process payment. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStaffAssignment = async () => {
+    if (!selectedStaff.trim()) {
+      setErrorMessage("Please select a staff member");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await updateLotStatus(selectedLot.itemLotId, parseInt(selectedStorage), 5, selectedStaff);
+      setIsAssignmentDialogOpen(false);
+      setSelectedLot(null);
+      fetchItemLots();
+      toast.success("Staff assigned successfully");
+    } catch (error) {
+      console.error("Failed to assign staff:", error);
+      setErrorMessage("Failed to assign staff. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateLotStatus = async (id, storageId, status, staffId = null) => {
     try {
       const response = await fetch(`${API_URL}/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           storageId: storageId,
-          status: status
+          status: status,
+          staffId: staffId
         }),
       });
 
@@ -230,510 +201,580 @@ const ManagerDashboard = () => {
   };
 
   const getStatusBadge = (status) => {
-    // Convert status to number if it's not already
-    const statusNum = typeof status === 'string' ? parseInt(status) : status;
-
-    switch (statusNum) {
+    switch (status) {
       case 0:
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">In Checking</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">In Checking</Badge>;
       case 1:
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
       case 2:
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
       case 3:
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200">Disposed</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">Paid</Badge>;
       case 4:
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       case 5:
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Need Disposing</Badge>;
+        return <Badge className="bg-indigo-100 text-indigo-800">Assigned</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
+  // Sidebar navigation options
+  const sidebarOptions = [
+    { id: 'overview', label: 'Overview', icon: <BarChart4 className="h-5 w-5" /> },
+    { id: 'stock-in', label: 'Stock-in Requests', icon: <ClipboardList className="h-5 w-5" /> },
+    { id: 'payments', label: 'Payments', icon: <DollarSign className="h-5 w-5" /> },
+    { id: 'assignments', label: 'Staff Assignments', icon: <UserPlus className="h-5 w-5" /> },
+    { id: 'process-flow', label: 'Process Flow', icon: <HelpCircle className="h-5 w-5" /> },
+  ];
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+  // Render content based on active view
+  const renderContent = () => {
+    switch (activeView) {
+      case 'overview':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {itemLots.filter(lot => lot.status === 1).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Awaiting review</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Approved Requests</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {itemLots.filter(lot => lot.status === 2).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Ready for payment</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Paid Requests</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {itemLots.filter(lot => lot.status === 3).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Ready for assignment</p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <h3 className="text-xl font-bold mb-4">Recent Requests</h3>
+            <Table>
+              <TableCaption>Your most recent stock-in requests</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Request ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Total Value</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {itemLots.slice(0, 5).map((lot) => (
+                  <TableRow key={lot.itemLotId}>
+                    <TableCell>{lot.itemLotId}</TableCell>
+                    <TableCell>{new Date(lot.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{getStatusBadge(lot.status)}</TableCell>
+                    <TableCell>${(lot.quantity * lot.item?.importPricePerUnit).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleRowClick(lot)}
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        );
+
+      case 'stock-in':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Stock-in Requests</h2>
+            <Table>
+              <TableCaption>A list of all stock-in requests</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Request ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Total Value</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {itemLots.map((lot) => (
+                  <TableRow key={lot.itemLotId}>
+                    <TableCell>{lot.itemLotId}</TableCell>
+                    <TableCell>{new Date(lot.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{lot.item?.name || "N/A"}</TableCell>
+                    <TableCell>{lot.quantity || "N/A"}</TableCell>
+                    <TableCell>{getStatusBadge(lot.status)}</TableCell>
+                    <TableCell>${(lot.quantity * lot.item?.importPricePerUnit).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleRowClick(lot)}
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        );
+
+      case 'payments':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Payment Processing</h2>
+            <Table>
+              <TableCaption>A list of approved requests pending payment</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Request ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {itemLots.filter(lot => lot.status === 2).map((lot) => (
+                  <TableRow key={lot.itemLotId}>
+                    <TableCell>{lot.itemLotId}</TableCell>
+                    <TableCell>{new Date(lot.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{lot.item?.name || "N/A"}</TableCell>
+                    <TableCell>{lot.quantity || "N/A"}</TableCell>
+                    <TableCell>${(lot.quantity * lot.item?.importPricePerUnit).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleRowClick(lot)}
+                      >
+                        Process Payment
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        );
+
+      case 'assignments':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Staff Assignments</h2>
+            <Table>
+              <TableCaption>A list of paid requests pending staff assignment</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Request ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Storage</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {itemLots.filter(lot => lot.status === 3).map((lot) => (
+                  <TableRow key={lot.itemLotId}>
+                    <TableCell>{lot.itemLotId}</TableCell>
+                    <TableCell>{new Date(lot.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{lot.item?.name || "N/A"}</TableCell>
+                    <TableCell>{lot.storageName || "N/A"}</TableCell>
+                    <TableCell>{getStatusBadge(lot.status)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleRowClick(lot)}
+                      >
+                        Assign Staff
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        );
+
+      case 'process-flow':
+        return (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Request Process Flow</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Understanding the Process</CardTitle>
+                <CardDescription>
+                  How stock-in requests are processed from staff verification to inventory update
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                      <span className="text-blue-700 font-bold">1</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Staff Verification</h3>
+                    <p className="text-sm text-gray-600">Staff verifies quantity and quality</p>
+                  </div>
+                  
+                  <div className="hidden md:block self-center">→</div>
+                  <div className="block md:hidden self-center">↓</div>
+                  
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mb-2">
+                      <span className="text-yellow-700 font-bold">2</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Manager Review</h3>
+                    <p className="text-sm text-gray-600">Manager reviews and approves request</p>
+                  </div>
+                  
+                  <div className="hidden md:block self-center">→</div>
+                  <div className="block md:hidden self-center">↓</div>
+                  
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
+                      <span className="text-green-700 font-bold">3</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Payment</h3>
+                    <p className="text-sm text-gray-600">Process payment for approved request</p>
+                  </div>
+                  
+                  <div className="hidden md:block self-center">→</div>
+                  <div className="block md:hidden self-center">↓</div>
+                  
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2">
+                      <span className="text-purple-700 font-bold">4</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Staff Assignment</h3>
+                    <p className="text-sm text-gray-600">Assign staff for storage</p>
+                  </div>
+                  
+                  <div className="hidden md:block self-center">→</div>
+                  <div className="block md:hidden self-center">↓</div>
+                  
+                  <div className="flex flex-col items-center text-center max-w-[200px]">
+                    <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-2">
+                      <span className="text-indigo-700 font-bold">5</span>
+                    </div>
+                    <h3 className="font-bold mb-1">Inventory Update</h3>
+                    <p className="text-sm text-gray-600">Staff confirms storage</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Detailed Process Description</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-bold text-lg mb-2">1. Staff Verification</h3>
+                  <p>Warehouse staff verifies the quantity and quality of the items in the stock-in request.</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">2. Manager Review</h3>
+                  <p>Manager reviews the verified request and approves or rejects it based on inventory needs and budget considerations.</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">3. Payment Processing</h3>
+                  <p>After approval, payment is processed based on the agreed import price.</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">4. Staff Assignment</h3>
+                  <p>Manager assigns warehouse staff to handle the storage of approved items.</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="font-bold text-lg mb-2">5. Inventory Update</h3>
+                  <p>Assigned staff confirms storage and updates the inventory system.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        );
+
+      default:
+        return <div>Select an option from the sidebar</div>;
+    }
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-gray-50">
-        {/* Sidebar */}
-        <div className={`bg-white border-r shadow-sm transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-6">
-              {!sidebarCollapsed && <h2 className="text-xl font-bold text-gray-800">Inventory</h2>}
-              <button
-                onClick={toggleSidebar}
-                className="p-1 rounded-md hover:bg-gray-100"
-              >
-                {sidebarCollapsed ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="13 17 18 12 13 7"></polyline>
-                    <polyline points="6 17 11 12 6 7"></polyline>
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="11 17 6 12 11 7"></polyline>
-                    <polyline points="18 17 13 12 18 7"></polyline>
-                  </svg>
-                )}
-              </button>
-            </div>
-            <nav className="space-y-2">
-              <button
-                className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${activeTab === "requests"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                onClick={() => setActiveTab("requests")}
-              >
-                <InboxIcon size={20} />
-                {!sidebarCollapsed && <span>Manage Lot Requests</span>}
-              </button>
-              <button
-                className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${activeTab === "search"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                onClick={() => setActiveTab("search")}
-              >
-                <Search size={20} />
-                {!sidebarCollapsed && <span>Search</span>}
-              </button>
-              <button
-                className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${activeTab === "report"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                onClick={() => setActiveTab("report")}
-              >
-                <FileText size={20} />
-                {!sidebarCollapsed && <span>Reports</span>}
-              </button>
-            </nav>
+    <div className="flex flex-col md:flex-row">
+      {/* Sidebar for desktop */}
+      <div className="hidden md:block md:w-64 border-r border-gray-200 bg-background">
+        <div className="sticky top-0 h-screen pt-4 pb-16 overflow-y-auto flex flex-col">
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-bold">Manager Portal</h2>
           </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
-          {/* Header */}
-          <div className="bg-white border-b shadow-sm px-6 py-4">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-800">
-                {activeTab === "requests" && "Item Lot Management"}
-                {activeTab === "search" && "Search Items"}
-                {activeTab === "report" && "Reports"}
-              </h1>
-              <div className="flex space-x-2">
-                <Button
-                  onClick={activeTab === "search" ? fetchItems : fetchCreateItemLots}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Clock size={16} />
-                  <span>Refresh</span>
-                </Button>
-              </div>
+          <nav className="flex-1 p-4 space-y-2">
+            {sidebarOptions.map((option) => (
+              <Button
+                key={option.id}
+                variant={activeView === option.id ? "secondary" : "ghost"}
+                className="w-full justify-start gap-2 text-left h-10"
+                onClick={() => setActiveView(option.id)}
+              >
+                {option.icon}
+                {option.label}
+              </Button>
+            ))}
+          </nav>
+          <div className="p-4 border-t mt-auto">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Package className="h-4 w-4" />
+              <span>Medical Warehouse System</span>
             </div>
           </div>
-
-          {/* Content Area */}
-          <div className="flex-1 p-6 overflow-auto">
-            {activeTab === "requests" && (
-              <>
-                <div className="mb-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                    <Input
-                      placeholder="Search by ID or item name..."
-                      className="pl-10 bg-white"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <Card className="overflow-hidden border-none shadow-md h-full flex-1">
-                  <CardHeader className="bg-gray-50 border-b pb-3">
-                    <CardTitle className="text-lg font-medium">All Create Lot Requests</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {isLoading && itemLots.length === 0 ? (
-                      <div className="flex justify-center items-center py-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      </div>
-                    ) : errorMessage && itemLots.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                        <AlertCircle size={40} className="mb-2 text-amber-500" />
-                        <p>{errorMessage}</p>
-                        <Button variant="outline" className="mt-4" onClick={fetchCreateItemLots}>
-                          Try Again
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="w-full overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-gray-50 hover:bg-gray-50">
-                              <TableHead className="font-medium">ID</TableHead>
-                              <TableHead className="font-medium">Item</TableHead>
-                              <TableHead className="font-medium">Quantity</TableHead>
-                              <TableHead className="font-medium">Quality</TableHead>
-                              <TableHead className="font-medium">Status</TableHead>
-                              <TableHead className="font-medium">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredRequests.map((lot) => (
-                              <TableRow
-                                key={lot.itemLotId}
-                                className="cursor-pointer hover:bg-blue-50 transition-colors"
-                              >
-                                <TableCell className="font-medium">{lot.itemLotId}</TableCell>
-                                <TableCell>{lot.item?.name || "N/A"}</TableCell>
-                                <TableCell>{lot.quantity || "N/A"}</TableCell>
-                                <TableCell>{lot.quality || "N/A"}</TableCell>
-                                <TableCell>
-                                  {getStatusBadge(lot.status)}
-                                </TableCell>
-                                <TableCell>
-                                  <motion.button
-                                    whileTap={{ scale: 0.9 }}
-                                    whileHover={{ scale: 1.05 }}
-                                  >
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-all"
-                                      onClick={() => handleRowClick(lot)}
-                                    >
-                                      View Details
-                                    </Button>
-                                  </motion.button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            {filteredRequests.length === 0 && (
-                              <TableRow>
-                                <TableCell colSpan={6} className="text-center py-12 text-gray-500">
-                                  {searchTerm ? (
-                                    <>
-                                      <Search size={40} className="mx-auto mb-2 opacity-40" />
-                                      <p>No matching requests found</p>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <InboxIcon size={40} className="mx-auto mb-2 opacity-40" />
-                                      <p>No pending requests available</p>
-                                    </>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            )}
-
-            {activeTab === "search" && (
-              <>
-                <div className="mb-6">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                    <Input
-                      placeholder="Search items by name, description or category..."
-                      className="pl-10 bg-white"
-                      value={itemSearchTerm}
-                      onChange={(e) => setItemSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {isLoadingItems ? (
-                  <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : itemsError ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                    <AlertCircle size={40} className="mb-2 text-amber-500" />
-                    <p>{itemsError}</p>
-                    <Button variant="outline" className="mt-4" onClick={fetchItems}>
-                      Try Again
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredItems.map((item) => (
-                      <motion.div
-                        key={item.id}
-                        whileHover={{ scale: 1.02 }}
-                        className="transition-all duration-200"
-                      >
-                        <Card className="overflow-hidden h-full shadow-sm border border-gray-200 hover:shadow-md">
-                          <div className="aspect-video bg-gray-100 relative overflow-hidden">
-                            <img
-                              src="https://s3.eu-north-1.amazonaws.com/cdn-site.mediaplanet.com/app/uploads/sites/94/2024/06/07205740/AdobeStock_627493260-576x486.jpg"
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                            <Badge className="absolute top-3 right-3 bg-blue-500">
-                              {item.categoryName}
-                            </Badge>
-                          </div>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-lg font-medium">{item.name}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <p className="text-gray-600 text-sm line-clamp-2">{item.description}</p>
-
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                              <div>
-                                <Label className="text-gray-500">Price</Label>
-                                <div className="font-medium">${item.importPricePerUnit.toFixed(2)}</div>
-                              </div>
-                              <div>
-                                <Label className="text-gray-500">Price</Label>
-                                <div className="font-medium">${item.exportPricePerUnit?.toFixed(2) || "N/A"}</div>
-                              </div>
-                              <div>
-                              <Label className="text-gray-500">Supplier</Label>
-                              <div className="font-medium>">{item.supplierName} </div>
-                              </div>
-                              <div>
-                                <Label className="text-gray-500">For Sale</Label>
-                                <div className="font-medium">{item.isForSale ? "Yes" : "No"}</div>
-                              </div>
-                            </div>
-
-                            <Button
-                              variant="outline"
-                              className="w-full mt-2 flex items-center justify-center gap-2"
-                              onClick={() => handleItemClick(item)}
-                            >                             
-                              <Package size={16} />
-                              <span>View Details</span>
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-
-                    {filteredItems.length === 0 && (
-                      <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500">
-                        <Search size={40} className="mb-2 opacity-40" />
-                        <p className="text-lg font-medium">No items found</p>
-                        <p className="text-gray-400">Try adjusting your search criteria</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-
-            {activeTab === "report" && (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center p-8 bg-white rounded-lg shadow-sm border">
-                  <FileText size={48} className="mx-auto mb-4 text-gray-400" />
-                  <h2 className="text-xl font-semibold mb-2">Reports Module</h2>
-                  <p className="text-gray-500">Reporting functionality will be implemented here</p>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) setErrorMessage("");
-        }}>
-          <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden rounded-lg">
-            <DialogHeader className="bg-gray-50 p-6 border-b">
-              <DialogTitle className="text-xl font-semibold">Item Lot Details</DialogTitle>
-            </DialogHeader>
-            {selectedLot && (
-              <>
-                <div className="p-6 grid gap-6">
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div>
-                      <Label className="text-gray-500 text-sm">Lot ID</Label>
-                      <div className="mt-1 font-semibold text-gray-800">{selectedLot.itemLotId}</div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Status</Label>
-                      <div className="mt-1">
-                        {getStatusBadge(selectedLot.status)}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Item</Label>
-                      <div className="mt-1 font-medium">{selectedLot.item?.name || "N/A"}</div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Quantity</Label>
-                      <div className="mt-1 font-medium">{selectedLot.quantity || "N/A"}</div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Quality</Label>
-                      <div className="mt-1 font-medium">{selectedLot.quality || "N/A"}</div>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t">
-                    <Label htmlFor="storage" className="text-gray-500 text-sm">
-                      Storage Location
-                    </Label>
-                    <select
-                      id="storage"
-                      value={storageLocation}
-                      onChange={(e) => setStorageLocation(e.target.value)}
-                      className="mt-1 p-2 border rounded"
-                    >
-                      <option value="" disabled>
-                        Select a Storage
-                      </option>
-                      {storages.map((storage) => (
-                        <option key={storage.id} value={storage.id}>
-                          {storage.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errorMessage && (
-                      <p className="mt-2 text-red-600 text-sm flex items-center">
-                        <AlertCircle size={14} className="mr-1" />
-                        {errorMessage}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <DialogFooter className="bg-gray-50 p-4 border-t flex justify-end gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    disabled={isLoading}
-                    className="border-gray-300"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleReject}
-                    disabled={selectedLot.status !== "Pending" || isLoading}
-
-                    className="flex items-center gap-1"
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center">
-                        <div className="animate-spin h-4 w-4 mr-1 border-2 border-b-transparent rounded-full"></div>
-                        Processing...
-                      </span>
-                    ) : (
-                      <>
-                        <XCircle size={16} />
-                        <span>Reject</span>
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={handleApprove}
-                    className="bg-green-600 hover:bg-green-700 flex items-center gap-1"
-                    disabled={!storageLocation.trim() || isLoading}
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center">
-                        <div className="animate-spin h-4 w-4 mr-1 border-2 border-b-transparent rounded-full"></div>
-                        Processing...
-                      </span>
-                    ) : (
-                      <>
-                        <CheckCircle size={16} />
-                        <span>Approve</span>
-                      </>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isDetailOpen} onOpenChange={(open) => {
-          setIsDetailOpen(open);
-          if (!open) setErrorMessage("");
-        }}>
-          <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden rounded-lg">
-            <DialogHeader className="bg-gray-50 p-6 border-b">
-              <DialogTitle className="text-xl font-semibold">Item Details</DialogTitle>
-            </DialogHeader>
-            {selectedItem && (
-              <>
-                <div className="p-6 grid gap-6">
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div>
-                      <Label className="text-gray-500 text-sm">Lot ID</Label>
-                      <div className="mt-1 font-semibold text-gray-800">{selectedItem.id}</div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Item Name</Label>
-                      <div className="mt-1 font-semibold text-gray-800">{selectedItem.name}</div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Description</Label>
-                      <div className="mt-1 font-medium">{selectedItem.description || "N/A"}</div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Import Price (Unit)</Label>
-                      <div className="mt-1 font-medium">{selectedItem.importPricePerUnit || "N/A"}</div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">Export Price (Unit)</Label>
-                      <div className="mt-1 font-medium">{selectedItem.exportPricePerUnit || "N/A"}</div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-500 text-sm">For Sale</Label>
-                      <div className="mt-1 font-medium">{selectedItem.isForSale? "Yes" : "No"}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <DialogFooter className="bg-gray-50 p-4 border-t flex justify-end gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsDetailOpen(false)}
-                    disabled={isLoading}
-                    className="border-gray-300"
-                  >
-                    Return
-                  </Button>
-                  <Button
-                    onClick={handleApprove}
-                    className="bg-green-600 hover:bg-green-700 flex items-center gap-1"
-                  >
-                      <>
-                        <CheckCircle size={16} />
-                        <span>Update</span>
-                      </>
-                  </Button>
-                  
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
-        
       </div>
-    </SidebarProvider>
+
+      {/* Mobile header and main content */}
+      <div className="flex-1">
+        {/* Mobile header */}
+        <div className="md:hidden sticky top-0 z-10 border-b bg-background">
+          <div className="flex items-center justify-between p-4">
+            <h2 className="text-xl font-bold">Manager Portal</h2>
+          </div>
+          <div className="overflow-x-auto border-t">
+            <div className="flex py-2 px-4">
+              {sidebarOptions.map((option) => (
+                <Button
+                  key={option.id}
+                  variant={activeView === option.id ? "secondary" : "ghost"}
+                  size="sm"
+                  className="mr-2 flex-none whitespace-nowrap"
+                  onClick={() => setActiveView(option.id)}
+                >
+                  <span className="flex items-center">
+                    {option.icon}
+                    <span className="ml-2">{option.label}</span>
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="container mx-auto p-6 max-w-6xl">
+          {renderContent()}
+        </div>
+      </div>
+
+      {/* Review Dialog */}
+      <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Review Stock-in Request</DialogTitle>
+            <DialogDescription>
+              Review and approve or reject the stock-in request
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLot && (
+            <>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Request ID</Label>
+                    <div className="font-medium">{selectedLot.itemLotId}</div>
+                  </div>
+                  <div>
+                    <Label>Item</Label>
+                    <div className="font-medium">{selectedLot.item?.name}</div>
+                  </div>
+                  <div>
+                    <Label>Quantity</Label>
+                    <div className="font-medium">{selectedLot.quantity}</div>
+                  </div>
+                  <div>
+                    <Label>Quality</Label>
+                    <div className="font-medium">{selectedLot.quality}</div>
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <div className="font-medium">
+                      ${(selectedLot.quantity * selectedLot.item?.importPricePerUnit).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Storage Location</Label>
+                  <Select value={selectedStorage} onValueChange={setSelectedStorage}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select storage location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {storages.map((storage) => (
+                        <SelectItem key={storage.id} value={storage.id.toString()}>
+                          {storage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsReviewDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleReject}>
+                  Reject
+                </Button>
+                <Button onClick={handleApprove}>
+                  Approve
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Dialog */}
+      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Process Payment</DialogTitle>
+            <DialogDescription>
+              Process payment for the approved stock-in request
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLot && (
+            <>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Request ID</Label>
+                    <div className="font-medium">{selectedLot.itemLotId}</div>
+                  </div>
+                  <div>
+                    <Label>Item</Label>
+                    <div className="font-medium">{selectedLot.item?.name}</div>
+                  </div>
+                  <div>
+                    <Label>Quantity</Label>
+                    <div className="font-medium">{selectedLot.quantity}</div>
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <div className="font-medium">
+                      ${(selectedLot.quantity * selectedLot.item?.importPricePerUnit).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handlePayment}>
+                  Confirm Payment
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Staff Assignment Dialog */}
+      <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Assign Staff Member</DialogTitle>
+            <DialogDescription>
+              Assign a staff member to handle the storage of items
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLot && (
+            <>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Request ID</Label>
+                    <div className="font-medium">{selectedLot.itemLotId}</div>
+                  </div>
+                  <div>
+                    <Label>Item</Label>
+                    <div className="font-medium">{selectedLot.item?.name}</div>
+                  </div>
+                  <div>
+                    <Label>Storage</Label>
+                    <div className="font-medium">{selectedLot.storageName}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Staff Member</Label>
+                  <Select value={selectedStaff} onValueChange={setSelectedStaff}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select staff member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staffMembers.map((staff) => (
+                        <SelectItem key={staff.id} value={staff.id.toString()}>
+                          {staff.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAssignmentDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleStaffAssignment}>
+                  Assign Staff
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
