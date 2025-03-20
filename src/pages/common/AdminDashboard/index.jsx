@@ -24,6 +24,7 @@ const AdminDashboard = () => {
   const [storages, setStorages] = useState([])
   const [newStorage, setNewStorage] = useState({ name: '', storageCategoryId: 0, isActive: true })
   const [storageCategories, setStorageCategories] = useState([])
+  const [editingStorage, setEditingStorage] = useState(null)
 
   useEffect(() => {
     if (activeTab === 'users') {
@@ -112,6 +113,21 @@ const AdminDashboard = () => {
       setStorages(storages.filter((storage) => storage.id !== id))
     } catch (error) {
       console.error('Error deleting storage:', error)
+    }
+  }
+
+  const updateStorage = async (id, updatedStorage) => {
+    try {
+      const response = await axios.put(`${API_STORAGE}/${id}`, updatedStorage)
+      const category = storageCategories.find((cat) => cat.id === updatedStorage.storageCategoryId)
+      const updatedStorageWithCategory = {
+        ...response.data,
+        storageCategoryName: category ? category.name : 'Unknown',
+      }
+      setStorages((prevStorages) => prevStorages.map((storage) => (storage.id === id ? updatedStorageWithCategory : storage)))
+      setEditingStorage(null)
+    } catch (error) {
+      console.error('Error updating storage:', error)
     }
   }
 
@@ -326,13 +342,62 @@ const AdminDashboard = () => {
                   {storages.map((storage) => (
                     <tr key={storage.id} className="hover:bg-gray-100 transition">
                       <td className="border p-2">{storage.id}</td>
-                      <td className="border p-2">{storage.name}</td>
-                      <td className="border p-2">{storage.storageCategoryName}</td>
-                      <td className="border p-2">{storage.isActive ? <span className="text-green-600 font-bold">Active</span> : <span className="text-red-600 font-bold">Inactive</span>}</td>
                       <td className="border p-2">
-                        <button onClick={() => deleteStorage(storage.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition">
-                          Delete
-                        </button>
+                        {editingStorage?.id === storage.id ? (
+                          <input type="text" value={editingStorage.name} onChange={(e) => setEditingStorage({ ...editingStorage, name: e.target.value })} className="border p-1 rounded" />
+                        ) : (
+                          storage.name
+                        )}
+                      </td>
+                      <td className="border p-2">
+                        {editingStorage?.id === storage.id ? (
+                          <select
+                            value={editingStorage.storageCategoryId}
+                            onChange={(e) => setEditingStorage({ ...editingStorage, storageCategoryId: parseInt(e.target.value) })}
+                            className="border p-1 rounded"
+                          >
+                            {storageCategories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          storage.storageCategoryName
+                        )}
+                      </td>
+                      <td className="border p-2">
+                        {editingStorage?.id === storage.id ? (
+                          <select value={editingStorage.isActive} onChange={(e) => setEditingStorage({ ...editingStorage, isActive: e.target.value === 'true' })} className="border p-1 rounded">
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                          </select>
+                        ) : storage.isActive ? (
+                          <span className="text-green-600 font-bold">Active</span>
+                        ) : (
+                          <span className="text-red-600 font-bold">Inactive</span>
+                        )}
+                      </td>
+                      <td className="border p-2">
+                        {editingStorage?.id === storage.id ? (
+                          <>
+                            <button onClick={() => updateStorage(storage.id, editingStorage)} className="bg-green-500 text-white px-2 py-1 rounded-lg hover:bg-green-600 transition">
+                              Save
+                            </button>
+                            <button onClick={() => setEditingStorage(null)} className="bg-gray-500 text-white px-2 py-1 rounded-lg hover:bg-gray-600 transition ml-2">
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => setEditingStorage(storage)} className="bg-orange-500 text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition">
+                              Modify
+                            </button>
+                            <button onClick={() => deleteStorage(storage.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition ml-2">
+                              Delete
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}
