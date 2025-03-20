@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { CardContent } from '@/components/ui/card'
 
 const API_URL = 'http://localhost:5090/api/user' // Cập nhật URL phù hợp với API .NET của bạn
+const API_STAFF = 'http://localhost:5090/api/staff-user'
 const API_ITEMS = 'http://localhost:5090/api/items'
 const API_LOT_REQUEST = 'http://localhost:5090/api/lot-request'
 const API_STORAGE = 'http://localhost:5090/api/storage'
@@ -18,6 +19,9 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [newUser, setNewUser] = useState({ name: '', email: '' })
+  const [staffs, setStaffs] = useState([]);
+  const [newStaff, setNewStaff] = useState({ name: '', email: '', role: '' });
+  const [staffList, setStaffList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('')
   const [items, setItems] = useState([])
   const [lots, setLots] = useState([])
@@ -66,6 +70,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers()
+    } else if (activeTab === 'staffs') {
+      fetchStaffs();
     } else if (activeTab === 'storage') {
       fetchStorages()
       fetchStorageCategories()
@@ -84,6 +90,27 @@ const AdminDashboard = () => {
       setLoading(false)
     }
   }
+  const fetchStaffs = async () => {
+    try {
+      const response = await axios.get(API_STAFF)
+      setUsers(response.data)
+    } catch (error) {
+      console.error('Error fetching staffs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+  // Gọi API khi component được mount
+  useEffect(() => {
+    fetchStaffs();
+  }, []);
+
+  // Log ra console khi danh sách nhân viên thay đổi
+  useEffect(() => {
+    console.log("Staff List Updated:", users);
+  }, [users]);
+
+
 
   const fetchStorages = async () => {
     try {
@@ -130,6 +157,24 @@ const AdminDashboard = () => {
       console.error('Error deleting user:', error)
     }
   }
+  const createStaff = async () => {
+    try {
+      const response = await axios.post(API_STAFF, newStaff);
+      setStaffs([...staffs, response.data]);
+      setNewStaff({ name: '', email: '', role: '' });
+    } catch (error) {
+      console.error('Error creating staff:', error);
+    }
+  }
+  const deleteStaff = async (id) => {
+    try {
+      await axios.delete(`${API_STAFF}/${id}`);
+      setStaffs(staffs.filter((staff) => staff.id !== id));
+    } catch (error) {
+      console.error('Error deleting staff:', error);
+    }
+  }
+
   const searchItemsAndLots = async () => {
     try {
       const [itemsRes, lotsRes] = await Promise.all([axios.get(`${API_ITEMS}?query=${searchQuery}`), axios.get(`${API_LOT_REQUEST}?query=${searchQuery}`)])
@@ -216,9 +261,17 @@ const AdminDashboard = () => {
           <div className="p-4">
             <h2 className="text-xl font-bold mb-4">Admin Menu</h2>
             <nav className="space-y-2">
-              <button className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === 'users' ? 'bg-primary text-white' : 'hover:bg-gray-200'}`} onClick={() => setActiveTab('users')}>
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === 'users' ? 'bg-primary text-white' : 'hover:bg-gray-200'}`}
+                onClick={() => setActiveTab('users')}>
                 <Users size={20} />
                 User Management
+              </button>
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === 'staffs' ? 'bg-primary text-white' : 'hover:bg-gray-200'}`}
+                onClick={() => setActiveTab('staffs')}>
+                <Users size={20} />
+                Staff Management
               </button>
               <button
                 className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === 'search' ? 'bg-primary text-white' : 'hover:bg-gray-200'}`}
@@ -310,6 +363,76 @@ const AdminDashboard = () => {
               )}
             </div>
           )}
+          {activeTab === 'staffs' && (
+            <div className="p-6 flex-1 w-full overflow-auto bg-white rounded-lg shadow-md border border-gray-300">
+              <h2 className="text-xl font-bold mb-4">Staff Management</h2>
+
+              {/* Form thêm nhân viên */}
+              <div className="mb-4 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={newStaff.name}
+                  onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={newStaff.email}
+                  onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Role"
+                  value={newStaff.role}
+                  onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
+                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
+                />
+                <button onClick={createStaff} className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                  Add Staff
+                </button>
+              </div>
+
+              {/* Bảng danh sách nhân viên */}
+              {loading ? (
+                <p>Loading staffs...</p>
+              ) : (
+                <table className="w-full border-collapse border border-gray-300 bg-white rounded-lg shadow">
+                  <thead>
+                    <tr className="bg-gray-200 text-left">
+                      <th className="border p-2">ID</th>
+                      <th className="border p-2">Name</th>
+                      <th className="border p-2">Email</th>
+                      <th className="border p-2">Role</th>
+                      <th className="border p-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffs.map((staff) => (
+                      <tr key={staff.id} className="hover:bg-gray-100 transition">
+                        <td className="border p-2">{staff.id}</td>                 
+                        <td className="border p-2">{staff.name}</td>
+                        <td className="border p-2">{staff.email}</td>
+                        <td className="border p-2">{staff.role}</td>
+                        <td className="border p-2">
+                          <button onClick={() => deleteUser(staff.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition">
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+
+
+
+
 
           {activeTab === 'search' && (
             <div className="space-y-6">
