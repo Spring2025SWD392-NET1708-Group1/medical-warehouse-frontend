@@ -417,7 +417,7 @@ const AdminDashboard = () => {
                         <td className="border p-2">{staff.email}</td>
                         <td className="border p-2">{staff.role}</td>
                         <td className="border p-2">
-                          <button onClick={() => deleteUser(staff.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition">
+                          <button onClick={() => deleteStaff(staff.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition">
                             Delete
                           </button>
                         </td>
