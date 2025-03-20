@@ -11,6 +11,7 @@ const API_URL = 'http://localhost:5090/api/user' // Cập nhật URL phù hợp 
 const API_ITEMS = 'http://localhost:5090/api/items'
 const API_LOT_REQUEST = 'http://localhost:5090/api/lot-request'
 const API_STORAGE = 'http://localhost:5090/api/storage'
+const API_STORAGE_CATEGORY = 'http://localhost:5090/api/storage-category'
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('users')
@@ -22,12 +23,14 @@ const AdminDashboard = () => {
   const [lots, setLots] = useState([])
   const [storages, setStorages] = useState([])
   const [newStorage, setNewStorage] = useState({ name: '', storageCategoryId: 0, isActive: true })
+  const [storageCategories, setStorageCategories] = useState([])
 
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers()
     } else if (activeTab === 'storage') {
       fetchStorages()
+      fetchStorageCategories()
     }
   }, [activeTab])
 
@@ -48,6 +51,15 @@ const AdminDashboard = () => {
       setStorages(response.data)
     } catch (error) {
       console.error('Error fetching storages:', error)
+    }
+  }
+
+  const fetchStorageCategories = async () => {
+    try {
+      const response = await axios.get(API_STORAGE_CATEGORY)
+      setStorageCategories(response.data)
+    } catch (error) {
+      console.error('Error fetching storage categories:', error)
     }
   }
 
@@ -82,7 +94,12 @@ const AdminDashboard = () => {
   const createStorage = async () => {
     try {
       const response = await axios.post(API_STORAGE, newStorage)
-      setStorages([...storages, response.data])
+      const category = storageCategories.find((cat) => cat.id === newStorage.storageCategoryId)
+      const newStorageWithCategory = {
+        ...response.data,
+        storageCategoryName: category ? category.name : 'Unknown',
+      }
+      setStorages([...storages, newStorageWithCategory])
       setNewStorage({ name: '', storageCategoryId: 0, isActive: true })
     } catch (error) {
       console.error('Error creating storage:', error)
@@ -258,13 +275,20 @@ const AdminDashboard = () => {
                   onChange={(e) => setNewStorage({ ...newStorage, name: e.target.value })}
                   className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
                 />
-                <input
-                  type="number"
-                  placeholder="Category ID"
+                <select
                   value={newStorage.storageCategoryId}
                   onChange={(e) => setNewStorage({ ...newStorage, storageCategoryId: parseInt(e.target.value) })}
                   className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
-                />
+                >
+                  <option value={0} disabled>
+                    Select Category
+                  </option>
+                  {storageCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
                 <select
                   value={newStorage.isActive}
                   onChange={(e) => setNewStorage({ ...newStorage, isActive: e.target.value === 'true' })}
