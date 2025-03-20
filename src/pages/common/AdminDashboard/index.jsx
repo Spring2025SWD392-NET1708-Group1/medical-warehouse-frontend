@@ -509,7 +509,7 @@ const AdminDashboard = () => {
                   placeholder="Category Name"
                   value={newStorageCategory.name}
                   onChange={(e) => setNewStorageCategory({ ...newStorageCategory, name: e.target.value })}
-                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
+                  className="border p-2 rounded-lg w-2/3 focus:ring-2 focus:ring-blue-400"
                 />
                 <button onClick={createStorageCategory} className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
                   Add Category
