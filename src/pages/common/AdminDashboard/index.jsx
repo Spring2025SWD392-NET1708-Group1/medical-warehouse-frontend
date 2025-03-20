@@ -26,6 +26,10 @@ const AdminDashboard = () => {
   const [storageCategories, setStorageCategories] = useState([])
   const [editingStorage, setEditingStorage] = useState(null)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+  const [storageCategoriesTab, setStorageCategoriesTab] = useState([])
+  const [newStorageCategory, setNewStorageCategory] = useState({ name: '' })
+  const [editingStorageCategory, setEditingStorageCategory] = useState(null)
+  const [sortConfigCategory, setSortConfigCategory] = useState({ key: null, direction: 'asc' })
 
   const sortedStorages = [...storages].sort((a, b) => {
     if (!sortConfig.key) return 0
@@ -43,12 +47,30 @@ const AdminDashboard = () => {
     }))
   }
 
+  const sortedStorageCategories = [...storageCategoriesTab].sort((a, b) => {
+    if (!sortConfigCategory.key) return 0
+    const aValue = a[sortConfigCategory.key]
+    const bValue = b[sortConfigCategory.key]
+    if (aValue < bValue) return sortConfigCategory.direction === 'asc' ? -1 : 1
+    if (aValue > bValue) return sortConfigCategory.direction === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const handleSortCategory = (key) => {
+    setSortConfigCategory((prevConfig) => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+    }))
+  }
+
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers()
     } else if (activeTab === 'storage') {
       fetchStorages()
       fetchStorageCategories()
+    } else if (activeTab === 'storageCategory') {
+      fetchStorageCategoriesTab()
     }
   }, [activeTab])
 
@@ -76,6 +98,15 @@ const AdminDashboard = () => {
     try {
       const response = await axios.get(API_STORAGE_CATEGORY)
       setStorageCategories(response.data)
+    } catch (error) {
+      console.error('Error fetching storage categories:', error)
+    }
+  }
+
+  const fetchStorageCategoriesTab = async () => {
+    try {
+      const response = await axios.get(API_STORAGE_CATEGORY)
+      setStorageCategoriesTab(response.data)
     } catch (error) {
       console.error('Error fetching storage categories:', error)
     }
@@ -148,6 +179,35 @@ const AdminDashboard = () => {
     }
   }
 
+  const createStorageCategory = async () => {
+    try {
+      const response = await axios.post(API_STORAGE_CATEGORY, newStorageCategory)
+      setStorageCategoriesTab([...storageCategoriesTab, response.data])
+      setNewStorageCategory({ name: '' })
+    } catch (error) {
+      console.error('Error creating storage category:', error)
+    }
+  }
+
+  const deleteStorageCategory = async (id) => {
+    try {
+      await axios.delete(`${API_STORAGE_CATEGORY}/${id}`)
+      setStorageCategoriesTab(storageCategoriesTab.filter((category) => category.id !== id))
+    } catch (error) {
+      console.error('Error deleting storage category:', error)
+    }
+  }
+
+  const updateStorageCategory = async (id, updatedCategory) => {
+    try {
+      const response = await axios.put(`${API_STORAGE_CATEGORY}/${id}`, updatedCategory)
+      setStorageCategoriesTab((prevCategories) => prevCategories.map((category) => (category.id === id ? response.data : category)))
+      setEditingStorageCategory(null)
+    } catch (error) {
+      console.error('Error updating storage category:', error)
+    }
+  }
+
   return (
     <SidebarProvider>
       <div className="flex h-screen ">
@@ -180,6 +240,13 @@ const AdminDashboard = () => {
               >
                 <FileText size={20} />
                 Storage
+              </button>
+              <button
+                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === 'storageCategory' ? 'bg-primary text-white' : 'hover:bg-gray-200'}`}
+                onClick={() => setActiveTab('storageCategory')}
+              >
+                <FileText size={20} />
+                Storage Category
               </button>
             </nav>
           </div>
@@ -419,6 +486,81 @@ const AdminDashboard = () => {
                               Modify
                             </button>
                             <button onClick={() => deleteStorage(storage.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition ml-2">
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === 'storageCategory' && (
+            <div className="p-6 flex-1 w-full overflow-auto bg-white rounded-lg shadow-md border border-gray-300">
+              <h2 className="text-xl font-bold mb-4">Storage Category Management</h2>
+
+              {/* Form to add new storage category */}
+              <div className="mb-4 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Category Name"
+                  value={newStorageCategory.name}
+                  onChange={(e) => setNewStorageCategory({ ...newStorageCategory, name: e.target.value })}
+                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
+                />
+                <button onClick={createStorageCategory} className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                  Add Category
+                </button>
+              </div>
+
+              {/* Storage Category table */}
+              <table className="w-full border-collapse border border-gray-300 bg-white rounded-lg shadow">
+                <thead>
+                  <tr className="bg-gray-200 text-left">
+                    <th className="border p-2 cursor-pointer" onClick={() => handleSortCategory('id')}>
+                      ID {sortConfigCategory.key === 'id' ? (sortConfigCategory.direction === 'asc' ? '↑' : '↓') : ''}
+                    </th>
+                    <th className="border p-2 cursor-pointer" onClick={() => handleSortCategory('name')}>
+                      Name {sortConfigCategory.key === 'name' ? (sortConfigCategory.direction === 'asc' ? '↑' : '↓') : ''}
+                    </th>
+                    <th className="border p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedStorageCategories.map((category) => (
+                    <tr key={category.id} className="hover:bg-gray-100 transition">
+                      <td className="border p-2">{category.id}</td>
+                      <td className="border p-2">
+                        {editingStorageCategory?.id === category.id ? (
+                          <input
+                            type="text"
+                            value={editingStorageCategory.name}
+                            onChange={(e) => setEditingStorageCategory({ ...editingStorageCategory, name: e.target.value })}
+                            className="border p-1 rounded"
+                          />
+                        ) : (
+                          category.name
+                        )}
+                      </td>
+                      <td className="border p-2">
+                        {editingStorageCategory?.id === category.id ? (
+                          <>
+                            <button onClick={() => updateStorageCategory(category.id, editingStorageCategory)} className="bg-green-500 text-white px-2 py-1 rounded-lg hover:bg-green-600 transition">
+                              Save
+                            </button>
+                            <button onClick={() => setEditingStorageCategory(null)} className="bg-gray-500 text-white px-2 py-1 rounded-lg hover:bg-gray-600 transition ml-2">
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => setEditingStorageCategory(category)} className="bg-orange-500 text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition">
+                              Modify
+                            </button>
+                            <button onClick={() => deleteStorageCategory(category.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition ml-2">
                               Delete
                             </button>
                           </>
