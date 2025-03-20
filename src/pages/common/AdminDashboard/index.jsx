@@ -25,6 +25,23 @@ const AdminDashboard = () => {
   const [newStorage, setNewStorage] = useState({ name: '', storageCategoryId: 0, isActive: true })
   const [storageCategories, setStorageCategories] = useState([])
   const [editingStorage, setEditingStorage] = useState(null)
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+
+  const sortedStorages = [...storages].sort((a, b) => {
+    if (!sortConfig.key) return 0
+    const aValue = a[sortConfig.key]
+    const bValue = b[sortConfig.key]
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const handleSort = (key) => {
+    setSortConfig((prevConfig) => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+    }))
+  }
 
   useEffect(() => {
     if (activeTab === 'users') {
@@ -331,15 +348,23 @@ const AdminDashboard = () => {
               <table className="w-full border-collapse border border-gray-300 bg-white rounded-lg shadow">
                 <thead>
                   <tr className="bg-gray-200 text-left">
-                    <th className="border p-2">ID</th>
-                    <th className="border p-2">Name</th>
-                    <th className="border p-2">Category</th>
-                    <th className="border p-2">Status</th>
+                    <th className="border p-2 cursor-pointer" onClick={() => handleSort('id')}>
+                      ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                    </th>
+                    <th className="border p-2 cursor-pointer" onClick={() => handleSort('name')}>
+                      Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                    </th>
+                    <th className="border p-2 cursor-pointer" onClick={() => handleSort('storageCategoryName')}>
+                      Category {sortConfig.key === 'storageCategoryName' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                    </th>
+                    <th className="border p-2 cursor-pointer" onClick={() => handleSort('isActive')}>
+                      Status {sortConfig.key === 'isActive' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                    </th>
                     <th className="border p-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {storages.map((storage) => (
+                  {sortedStorages.map((storage) => (
                     <tr key={storage.id} className="hover:bg-gray-100 transition">
                       <td className="border p-2">{storage.id}</td>
                       <td className="border p-2">
