@@ -21,7 +21,6 @@ const AdminDashboard = () => {
   const [newUser, setNewUser] = useState({ name: '', email: '' })
   const [staffs, setStaffs] = useState([]);
   const [newStaff, setNewStaff] = useState({ name: '', email: '', role: '' });
-  const [staffList, setStaffList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('')
   const [items, setItems] = useState([])
   const [lots, setLots] = useState([])
