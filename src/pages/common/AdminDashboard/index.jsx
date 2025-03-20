@@ -106,6 +106,15 @@ const AdminDashboard = () => {
     }
   }
 
+  const deleteStorage = async (id) => {
+    try {
+      await axios.delete(`${API_STORAGE}/${id}`)
+      setStorages(storages.filter((storage) => storage.id !== id))
+    } catch (error) {
+      console.error('Error deleting storage:', error)
+    }
+  }
+
   return (
     <SidebarProvider>
       <div className="flex h-screen ">
@@ -310,6 +319,7 @@ const AdminDashboard = () => {
                     <th className="border p-2">Name</th>
                     <th className="border p-2">Category</th>
                     <th className="border p-2">Status</th>
+                    <th className="border p-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -319,6 +329,11 @@ const AdminDashboard = () => {
                       <td className="border p-2">{storage.name}</td>
                       <td className="border p-2">{storage.storageCategoryName}</td>
                       <td className="border p-2">{storage.isActive ? <span className="text-green-600 font-bold">Active</span> : <span className="text-red-600 font-bold">Inactive</span>}</td>
+                      <td className="border p-2">
+                        <button onClick={() => deleteStorage(storage.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition">
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
