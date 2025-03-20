@@ -21,6 +21,7 @@ const AdminDashboard = () => {
   const [items, setItems] = useState([])
   const [lots, setLots] = useState([])
   const [storages, setStorages] = useState([])
+  const [newStorage, setNewStorage] = useState({ name: '', storageCategoryId: 0, isActive: true })
 
   useEffect(() => {
     if (activeTab === 'users') {
@@ -75,6 +76,16 @@ const AdminDashboard = () => {
       setLots(lotsRes.data)
     } catch (error) {
       console.error('Error searching:', error)
+    }
+  }
+
+  const createStorage = async () => {
+    try {
+      const response = await axios.post(API_STORAGE, newStorage)
+      setStorages([...storages, response.data])
+      setNewStorage({ name: '', storageCategoryId: 0, isActive: true })
+    } catch (error) {
+      console.error('Error creating storage:', error)
     }
   }
 
@@ -237,6 +248,37 @@ const AdminDashboard = () => {
           {activeTab === 'storage' && (
             <div className="p-6 flex-1 w-full overflow-auto bg-white rounded-lg shadow-md border border-gray-300">
               <h2 className="text-xl font-bold mb-4">Storage Management</h2>
+
+              {/* Form to add new storage */}
+              <div className="mb-4 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Storage Name"
+                  value={newStorage.name}
+                  onChange={(e) => setNewStorage({ ...newStorage, name: e.target.value })}
+                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
+                />
+                <input
+                  type="number"
+                  placeholder="Category ID"
+                  value={newStorage.storageCategoryId}
+                  onChange={(e) => setNewStorage({ ...newStorage, storageCategoryId: parseInt(e.target.value) })}
+                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
+                />
+                <select
+                  value={newStorage.isActive}
+                  onChange={(e) => setNewStorage({ ...newStorage, isActive: e.target.value === 'true' })}
+                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+                <button onClick={createStorage} className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                  Add Storage
+                </button>
+              </div>
+
+              {/* Storage table */}
               <table className="w-full border-collapse border border-gray-300 bg-white rounded-lg shadow">
                 <thead>
                   <tr className="bg-gray-200 text-left">
