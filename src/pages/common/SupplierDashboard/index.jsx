@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,26 +10,60 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+
+
 
 // Import icons
 import { Package, ClipboardList, CheckCircle, XCircle, BarChart4, HelpCircle, Plus } from 'lucide-react';
 
+const API_URL = "http://localhost:5090/api/stock-in-request";
+const ITEM_API_URL = "http://localhost:5090/api/items"
+
 const SupplierDashboard = () => {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('overview');
+  const [items, setItems] = useState([]);
   const [isCreateRequestDialogOpen, setIsCreateRequestDialogOpen] = useState(false);
-  
+  const [isViewRequestDetailOpen, setIsViewRequestDetailOpen] = useState(false);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [selectedRejectReason, setSelectedRejectReason] = useState("");
+  const [stockInRequest, setStockInRequest] = useState([]);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const token = localStorage.getItem("token");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredRequests, setFilteredRequests] = useState([]); // For filtered requests
+
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleOpenRejectModal = (reason) => {
+    setSelectedRejectReason(reason);
+    setIsRejectModalOpen(true);
+  };
+
+  const [createRequest, setCreateRequest] = useState({
+    itemId: null,
+    quantity: null,
+    importPricePerUnit: null,
+    expiryDate: null,
+    note: null,
+  });
+
   // Mock data for the dashboard
   const pendingRequests = [
     { id: 'REQ-001', date: '2023-07-15', items: 5, status: 'PENDING', totalValue: 4500 },
     { id: 'REQ-002', date: '2023-07-18', items: 3, status: 'UNDER_REVIEW', totalValue: 2800 },
   ];
-  
+
   const approvedRequests = [
     { id: 'REQ-003', date: '2023-07-01', items: 8, status: 'APPROVED', totalValue: 7200, paymentStatus: 'PAID' },
     { id: 'REQ-004', date: '2023-06-25', items: 4, status: 'COMPLETED', totalValue: 3500, paymentStatus: 'PAID' },
   ];
-  
+
   const rejectedRequests = [
     { id: 'REQ-005', date: '2023-07-10', items: 2, status: 'REJECTED', totalValue: 1500, reason: 'Price too high' },
   ];
@@ -41,34 +75,210 @@ const SupplierDashboard = () => {
     { id: 3, name: 'Omeprazole 20mg', category: 'Gastrointestinal' },
   ];
 
+
+  useEffect(() => {
+    if (activeView === "create-request") {
+      fetchItems(); // Assuming you already have this function defined
+    }
+    
+    if (activeView === "overview") {
+      fetchUserStockInRequests();
+    }
+  
+    if (activeView === "pending-requests") {
+      // Filter the requests to only include 'Pending' status (status 0)
+      const pendingRequests = stockInRequest.filter(request => request.status === 0);
+      setFilteredRequests(pendingRequests);
+    }
+
+    if (activeView === "approved-requests") {
+      // Filter the requests to only include 'Pending' status (status 0)
+      const approvedRequests = stockInRequest.filter(request => request.status === 2);
+      setFilteredRequests(approvedRequests);
+    }
+
+    if (activeView === "rejected-requests") {
+      // Filter the requests to only include 'Pending' status (status 0)
+      const rejectedRequests = stockInRequest.filter(request => request.status === 4);
+      setFilteredRequests(rejectedRequests);
+    }
+  
+  }, [activeView, stockInRequest]);
+
+
+  const fetchItems = async () => {
+    try {
+      const response = await fetch(`${ITEM_API_URL}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setItems(data);
+    } catch (error) {
+      console.error("Failed to fetch stock-in requests:", error);
+    }
+  };
+
   // Handler functions
-  const handleCreateRequest = () => {
-    // Logic to create a stock-in request would go here
+  const handleCreateRequest = async () => {
+    try {
+      // Log the body data being sent to the API
+      console.log("Request Body: ", {
+        itemId: createRequest.itemId,
+        quantity: createRequest.quantity,
+        importPricePerUnit: createRequest.importPricePerUnit,
+        expiryDate: createRequest.expiryDate,
+        note: createRequest.note ?? null,
+      }); // Log the request body
+      const response = await fetch(`${API_URL}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          itemId: createRequest.itemId,
+          quantity: createRequest.quantity,
+          importPricePerUnit: createRequest.importPricePerUnit,
+          expiryDate: createRequest.expiryDate,
+          note: createRequest.note ?? null,
+        })
+      });
+      console.log("Response body: "+ response.body);
+      if (!response.ok) {
+        toast.error("Failed to create Stock in Request");
+      }
+
+    } catch (error) {
+      console.error("Failed to create stock-in requests:", error);
+    }
     setIsCreateRequestDialogOpen(false);
     // Show success message or notification
   };
 
-  const handleViewRequestDetails = (requestId) => {
-    // Navigate to request details page
-    // navigate(`/supplier/request/${requestId}`);
-    console.log(`Viewing details for request ${requestId}`);
+  useEffect(() => {
+    fetchUserStockInRequests();
+  }, []);
+
+  const fetchUserStockInRequests = async () => {
+    try {
+      const response = await fetch(`${API_URL}/user`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setStockInRequest(data);
+    } catch (error) {
+      console.error("Failed to fetch stock-in requests:", error);
+    }
+  };
+
+  const handleUpdateStockInRequest = async (selectedRequest, updatedStatus) => {
+    try {
+      // Send the PUT request to update the stock-in request
+      console.log("Update confirmed");
+      const response = await fetch(`${API_URL}/${selectedRequest.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status: updatedStatus // Use the updated status passed to the function
+        })
+
+      });
+
+      // Check if the response is successful
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+
+      // Parse the response body
+      const data = await response.json();
+
+      // Assuming the response contains the updated request data with the status
+      // Update the selected request status with the new one from the response
+      setSelectedRequest(prevRequest => ({
+        ...prevRequest,
+        status: data.status, // Assuming the response contains the updated status
+      }));
+
+      console.log("Stock-in request updated successfully with status:", data.status);
+
+    } catch (error) {
+      console.error("Failed to update stock-in request:", error);
+    }
+  };
+
+
+  const handleViewRequestDetails = (request) => {
+    setSelectedRequest(request);
+    setIsViewRequestDetailOpen(true);
   };
 
   const getStatusBadge = (status) => {
-    const statusStyles = {
-      'PENDING': 'bg-yellow-100 text-yellow-800',
-      'UNDER_REVIEW': 'bg-blue-100 text-blue-800',
-      'APPROVED': 'bg-green-100 text-green-800',
-      'COMPLETED': 'bg-purple-100 text-purple-800',
-      'REJECTED': 'bg-red-100 text-red-800',
+    const statusMap = {
+      0: 'Pending',
+      1: 'Under Review',
+      2: 'Approved',
+      3: 'Completed',
+      4: 'Rejected',
+      5: 'Cancelled',
     };
-    
+
+    const statusStyles = {
+      'Pending': 'bg-yellow-100 text-yellow-800',
+      'Under Review': 'bg-blue-100 text-blue-800',
+      'Approved': 'bg-green-100 text-green-800',
+      'Completed': 'bg-purple-100 text-purple-800',
+      'Rejected': 'bg-red-100 text-red-800',
+      'Cancelled': 'bg-gray-100 text-gray-800',
+    };
+
+    const statusText = statusMap[status] || 'Unknown';
+
     return (
-      <Badge variant="outline" className={statusStyles[status]}>
-        {status.replace('_', ' ')}
+      <Badge variant="outline" className={statusStyles[statusText] || 'bg-gray-100 text-gray-800'}>
+        {statusText.replace('_', ' ')}
       </Badge>
     );
   };
+
+  const getPaymentStatusBadge = (paymentStatus) => {
+    const paymentStatusStyles = {
+      0: "bg-yellow-100 text-yellow-800", // Pending
+      1: "bg-green-100 text-green-800",  // Paid
+      2: "bg-red-100 text-red-800",      // Cancelled
+    };
+
+    const paymentStatusText = {
+      0: "Pending",
+      1: "Paid",
+      2: "Cancelled",
+    };
+
+    return (
+      <Badge variant="outline" className={paymentStatusStyles[paymentStatus] || "bg-gray-100 text-gray-800"}>
+        {paymentStatusText[paymentStatus] || "Unknown"}
+      </Badge>
+    );
+  };
+
+
 
   // Sidebar navigation options
   const sidebarOptions = [
@@ -123,31 +333,31 @@ const SupplierDashboard = () => {
                 </CardContent>
               </Card>
             </div>
-            
+
             <h3 className="text-xl font-bold mb-4">Recent Requests</h3>
             <Table>
               <TableCaption>Your most recent stock-in requests</TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead>Request ID</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Created Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Total Value</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[...pendingRequests, ...approvedRequests].slice(0, 3).map((request) => (
+                {stockInRequest.slice(0, 3).map((request) => (
                   <TableRow key={request.id}>
                     <TableCell>{request.id}</TableCell>
-                    <TableCell>{request.date}</TableCell>
+                    <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
-                    <TableCell>${request.totalValue}</TableCell>
+                    <TableCell>${(request.quantity * request.importPricePerUnit || 0).toFixed(2)}</TableCell>
                     <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleViewRequestDetails(request.id)}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewRequestDetails(request)}
                       >
                         View Details
                       </Button>
@@ -156,6 +366,7 @@ const SupplierDashboard = () => {
                 ))}
               </TableBody>
             </Table>
+
           </>
         );
 
@@ -174,34 +385,103 @@ const SupplierDashboard = () => {
                 <div className="grid gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="item">Medical Item</Label>
-                    <Select>
+                    <Select onValueChange={(value) => setCreateRequest(prevState => ({
+                      ...prevState,
+                      itemId: value // Set the itemId here from selected value
+                    }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select an item" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableItems.map(item => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name} ({item.category})
-                          </SelectItem>
-                        ))}
+                        {/* Search Input */}
+                        <div className="p-2">
+                          <Input
+                            placeholder="Search items..."
+                            required
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full"
+                          />
+                        </div>
+
+                        {/* Filtered Items */}
+                        {filteredItems.length > 0 ? (
+                          filteredItems.map(item => (
+                            <SelectItem key={item.id} value={item.id.toString()}>
+                              {item.name} ({item.categoryName})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-gray-500 text-sm">No items found</div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Quantity */}
                   <div className="grid gap-2">
                     <Label htmlFor="quantity">Quantity</Label>
-                    <Input id="quantity" type="number" min="1" />
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      required
+                      value={createRequest.quantity}
+                      onChange={(e) =>
+                        setCreateRequest((prev) => ({
+                          ...prev,
+                          quantity: Number(e.target.value),
+                        }))
+                      }
+                    />
                   </div>
+
+                  {/* Import Price per Unit */}
                   <div className="grid gap-2">
                     <Label htmlFor="importPrice">Import Price (per unit)</Label>
-                    <Input id="importPrice" type="number" min="0.01" step="0.01" />
+                    <Input
+                      id="importPrice"
+                      type="number"
+                      required
+                      value={createRequest.importPricePerUnit}
+                      onChange={(e) =>
+                        setCreateRequest((prev) => ({
+                          ...prev,
+                          importPricePerUnit: Number(e.target.value),
+                        }))
+                      }
+                    />
                   </div>
+
+                  {/* Expiry Date */}
                   <div className="grid gap-2">
                     <Label htmlFor="expiry">Expiry Date</Label>
-                    <Input id="expiry" type="date" />
+                    <Input
+                      id="expiry"
+                      type="date"
+                      required
+                      value={createRequest.expiryDate}
+                      onChange={(e) =>
+                        setCreateRequest((prev) => ({
+                          ...prev,
+                          expiryDate: e.target.value,
+                        }))
+                      }
+                    />
                   </div>
+
+                  {/* Additional Notes */}
                   <div className="grid gap-2">
                     <Label htmlFor="notes">Additional Notes</Label>
-                    <Input id="notes" />
+                    <Input
+                      id="notes"
+                      value={createRequest.note}
+                      onChange={(e) =>
+                        setCreateRequest((prev) => ({
+                          ...prev,
+                          note: e.target.value,
+                        }))
+                      }
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -221,26 +501,26 @@ const SupplierDashboard = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Request ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Items</TableHead>
+                  <TableHead>Created Date</TableHead>
+                  <TableHead>Item</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Total Value</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingRequests.map((request) => (
+                {filteredRequests.map((request) => (
                   <TableRow key={request.id}>
                     <TableCell>{request.id}</TableCell>
-                    <TableCell>{request.date}</TableCell>
-                    <TableCell>{request.items}</TableCell>
+                    <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{request.itemName}</TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
-                    <TableCell>${request.totalValue}</TableCell>
+                    <TableCell>  ${request.quantity * request.importPricePerUnit}</TableCell>
                     <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleViewRequestDetails(request.id)}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewRequestDetails(request)}
                       >
                         View Details
                       </Button>
@@ -261,7 +541,7 @@ const SupplierDashboard = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Request ID</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Created Date</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Total Value</TableHead>
@@ -270,23 +550,21 @@ const SupplierDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {approvedRequests.map((request) => (
+                {filteredRequests.map((request) => (
                   <TableRow key={request.id}>
                     <TableCell>{request.id}</TableCell>
-                    <TableCell>{request.date}</TableCell>
-                    <TableCell>{request.items}</TableCell>
+                    <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{request.itemName}</TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
-                    <TableCell>${request.totalValue}</TableCell>
+                    <TableCell>${request.quantity * request.importPricePerUnit}</TableCell>
                     <TableCell>
-                      <Badge variant={request.paymentStatus === 'PAID' ? 'default' : 'outline'}>
-                        {request.paymentStatus}
-                      </Badge>
+                      {getPaymentStatusBadge(request.paymentStatus)}
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleViewRequestDetails(request.id)}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewRequestDetails(request)}
                       >
                         View Details
                       </Button>
@@ -307,8 +585,8 @@ const SupplierDashboard = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Request ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Items</TableHead>
+                  <TableHead>Created Date</TableHead>
+                  <TableHead>Item</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Total Value</TableHead>
                   <TableHead>Reason</TableHead>
@@ -316,19 +594,32 @@ const SupplierDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rejectedRequests.map((request) => (
+                {filteredRequests.map((request) => (
                   <TableRow key={request.id}>
                     <TableCell>{request.id}</TableCell>
-                    <TableCell>{request.date}</TableCell>
-                    <TableCell>{request.items}</TableCell>
+                    <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{request.itemName}</TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
-                    <TableCell>${request.totalValue}</TableCell>
-                    <TableCell>{request.reason}</TableCell>
+                    <TableCell>${request.quantity * request.importPricePerUnit}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      {request.rejectReason ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenRejectModal(request.rejectReason)}
+                        >
+                          View Reason
+                        </Button>
+                      ) : (
+                        "N/A"
+                      )}
+                    </TableCell>
+
                     <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleViewRequestDetails(request.id)}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewRequestDetails(request)}
                       >
                         View Details
                       </Button>
@@ -360,10 +651,10 @@ const SupplierDashboard = () => {
                     <h3 className="font-bold mb-1">Create Request</h3>
                     <p className="text-sm text-gray-600">Submit stock-in request with item details, quantity, and price</p>
                   </div>
-                  
+
                   <div className="hidden md:block self-center">→</div>
                   <div className="block md:hidden self-center">↓</div>
-                  
+
                   <div className="flex flex-col items-center text-center max-w-[200px]">
                     <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mb-2">
                       <span className="text-yellow-700 font-bold">2</span>
@@ -371,10 +662,10 @@ const SupplierDashboard = () => {
                     <h3 className="font-bold mb-1">Staff Review</h3>
                     <p className="text-sm text-gray-600">Staff verifies quality and quantity of requested items</p>
                   </div>
-                  
+
                   <div className="hidden md:block self-center">→</div>
                   <div className="block md:hidden self-center">↓</div>
-                  
+
                   <div className="flex flex-col items-center text-center max-w-[200px]">
                     <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
                       <span className="text-green-700 font-bold">3</span>
@@ -382,10 +673,10 @@ const SupplierDashboard = () => {
                     <h3 className="font-bold mb-1">Manager Approval</h3>
                     <p className="text-sm text-gray-600">Manager reviews and approves the stock-in request</p>
                   </div>
-                  
+
                   <div className="hidden md:block self-center">→</div>
                   <div className="block md:hidden self-center">↓</div>
-                  
+
                   <div className="flex flex-col items-center text-center max-w-[200px]">
                     <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2">
                       <span className="text-purple-700 font-bold">4</span>
@@ -393,10 +684,10 @@ const SupplierDashboard = () => {
                     <h3 className="font-bold mb-1">Payment</h3>
                     <p className="text-sm text-gray-600">Payment processed based on import price</p>
                   </div>
-                  
+
                   <div className="hidden md:block self-center">→</div>
                   <div className="block md:hidden self-center">↓</div>
-                  
+
                   <div className="flex flex-col items-center text-center max-w-[200px]">
                     <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-2">
                       <span className="text-indigo-700 font-bold">5</span>
@@ -486,6 +777,125 @@ const SupplierDashboard = () => {
         </div>
       </div>
 
+      {/* Stock in Request Details Dialog */}
+      <Dialog open={isViewRequestDetailOpen} onOpenChange={setIsViewRequestDetailOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Stock In Request Details</DialogTitle>
+            <DialogDescription>
+              Review stock in request details
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedRequest && (
+            <>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Request ID</Label>
+                    <div className="font-medium">{selectedRequest.id}</div>
+                  </div>
+                  <div>
+                    <Label>Item</Label>
+                    <div className="font-medium">{selectedRequest.itemName}</div>
+                  </div>
+                  <div>
+                    <Label>Quantity</Label>
+                    <div className="font-medium">{selectedRequest.quantity}</div>
+                  </div>
+                  <div>
+                    <Label>Import Price per Unit</Label>
+                    <div className="font-medium">${selectedRequest.importPricePerUnit.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <Label>Expiry Date</Label>
+                    <div className="font-medium">
+                      {new Date(selectedRequest.expiryDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Request Status</Label>
+                    <div className="font-medium">
+                      {getStatusBadge(selectedRequest.status)}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Payment Status</Label>
+                    <div className="font-medium">
+                      {getPaymentStatusBadge(selectedRequest.paymentStatus)}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Note</Label>
+                  <div >
+                    {/* Use a Textarea for larger input display */}
+                    <textarea
+                      className="w-full p-2 border rounded-md"
+                      rows="4"  // Sets the number of visible rows (lines)
+                      value={selectedRequest.note}
+                      readOnly  // You can remove this if you want the user to edit the note
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Confirmation Dialog */}
+              {isCancelConfirmOpen && (
+                <Dialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Confirm Cancellation</DialogTitle>
+                      <DialogDescription>
+                        Are you sure you want to cancel this request? This action cannot be undone.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsCancelConfirmOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={() => handleUpdateStockInRequest(selectedRequest, 5)} color="red">
+                        Confirm Cancellation
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </>
+          )}
+
+          <DialogFooter>
+            {/* Cancel Request Button */}
+            {selectedRequest && selectedRequest.status === 0 && (
+              <Button
+                variant="destructive"
+                color="red"
+                onClick={() => setIsCancelConfirmOpen(true)}
+              >
+                Cancel Request
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setIsViewRequestDetailOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reject Reason</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 text-gray-700">{selectedRejectReason}</div>
+          <DialogFooter>
+            <Button onClick={() => setIsRejectModalOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       {/* Mobile header and main content */}
       <div className="flex-1">
         {/* Mobile header */}
@@ -545,6 +955,7 @@ const SupplierDashboard = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
           </div>
           <div className="overflow-x-auto border-t">
             <div className="flex py-2 px-4">
