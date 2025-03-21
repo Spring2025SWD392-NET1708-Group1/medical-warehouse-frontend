@@ -10,6 +10,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             <Users size={20} />
             User Management
           </button>
+          <button className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === 'staffs' ? 'bg-primary text-white' : 'hover:bg-gray-200'}`} onClick={() => setActiveTab('staffs')}>
+            <Users size={20} />
+            Staff Management
+          </button>
           <button className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${activeTab === 'search' ? 'bg-primary text-white' : 'hover:bg-gray-200'}`} onClick={() => setActiveTab('search')}>
             <Search size={20} />
             Search Lots & Items

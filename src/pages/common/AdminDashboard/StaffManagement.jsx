@@ -1,49 +1,49 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
-const API_URL = 'http://localhost:5090/api/staff-user'
+const API_URL = 'http://localhost:5090/api/staff-user';
 
 const StaffManagement = () => {
-  const [staffs, setStaffs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [newStaff, setNewStaff] = useState({ name: '', email: '', role: '' })
+  const [staffs, setStaffs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newStaff, setNewStaff] = useState({ name: '', email: '', role: '' });
 
   useEffect(() => {
-    fetchStaffs()
-  }, [])
+    fetchStaffs();
+  }, []);
 
   const fetchStaffs = async () => {
     try {
-      const response = await axios.get(API_URL)
-      setStaffs(response.data)
+      const response = await axios.get(API_URL);
+      setStaffs(response.data);
     } catch (error) {
-      console.error('Error fetching staff:', error)
+      console.error('Error fetching staff:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const createStaff = async () => {
     try {
-      const response = await axios.post(API_URL, newStaff)
-      setStaffs([...staffs, response.data])
-      setNewStaff({ name: '', email: '', role: '' })
+      const response = await axios.post(API_URL, newStaff);
+      setStaffs([...staffs, response.data]);
+      setNewStaff({ name: '', email: '', role: '' });
     } catch (error) {
-      console.error('Error creating staff:', error)
+      console.error('Error creating staff:', error);
     }
-  }
+  };
 
   const deleteStaff = async (id) => {
     try {
-      await axios.delete(`${API_URL}/${id}`)
-      setStaffs(staffs.filter((staff) => staff.id !== id))
+      await axios.delete(`${API_URL}/${id}`);
+      setStaffs(staffs.filter((staff) => staff.id !== id));
     } catch (error) {
-      console.error('Error deleting staff:', error)
+      console.error('Error deleting staff:', error);
     }
-  }
+  };
 
   return (
     <div className="p-6 flex-1 w-full overflow-auto bg-white rounded-lg shadow-md border border-gray-300">
@@ -53,7 +53,7 @@ const StaffManagement = () => {
       <div className="mb-4 flex gap-2">
         <Input placeholder="Name" value={newStaff.name} onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} className="w-1/4" />
         <Input type="email" placeholder="Email" value={newStaff.email} onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })} className="w-1/4" />
-        <Input placeholder="Position" value={newStaff.position} onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })} className="w-1/4" />
+        <Input placeholder="Role" value={newStaff.role} onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })} className="w-1/4" />
         <Button onClick={createStaff} className="bg-primary text-white">
           Add Staff
         </Button>
@@ -91,7 +91,7 @@ const StaffManagement = () => {
         </Table>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default StaffManagement
+export default StaffManagement;

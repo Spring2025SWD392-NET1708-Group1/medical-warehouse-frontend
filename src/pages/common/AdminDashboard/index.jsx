@@ -17,7 +17,7 @@ const AdminDashboard = () => {
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="flex-1 p-6 overflow-auto">
           {activeTab === 'users' && <UserManagement />}
-          {activeTab === 'staff' && <StaffManagement />}
+          {activeTab === 'staffs' && <StaffManagement />}
           {activeTab === 'search' && <SearchLotsAndItems />}
           {activeTab === 'storageCategory' && <StorageCategoryManagement />}
           {activeTab === 'report' && <Report />}
