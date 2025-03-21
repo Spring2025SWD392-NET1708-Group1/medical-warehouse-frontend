@@ -488,72 +488,57 @@ const AdminDashboard = () => {
 
               {/* Form to add new storage category */}
               <div className="mb-4 flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Category Name"
-                  value={newStorageCategory.name}
-                  onChange={(e) => setNewStorageCategory({ ...newStorageCategory, name: e.target.value })}
-                  className="border p-2 rounded-lg w-2/3 focus:ring-2 focus:ring-blue-400"
-                />
-                <button onClick={createStorageCategory} className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                <Input placeholder="Category Name" value={newStorageCategory.name} onChange={(e) => setNewStorageCategory({ ...newStorageCategory, name: e.target.value })} className="w-2/3" />
+                <Button onClick={createStorageCategory} variant="default">
                   Add Category
-                </button>
+                </Button>
               </div>
 
               {/* Storage Category table */}
-              <table className="w-full border-collapse border border-gray-300 bg-white rounded-lg shadow">
-                <thead>
-                  <tr className="bg-gray-200 text-left">
-                    <th className="border p-2 cursor-pointer" onClick={() => handleSortCategory('id')}>
-                      ID {sortConfigCategory.key === 'id' ? (sortConfigCategory.direction === 'asc' ? '↑' : '↓') : ''}
-                    </th>
-                    <th className="border p-2 cursor-pointer" onClick={() => handleSortCategory('name')}>
-                      Name {sortConfigCategory.key === 'name' ? (sortConfigCategory.direction === 'asc' ? '↑' : '↓') : ''}
-                    </th>
-                    <th className="border p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead onClick={() => handleSortCategory('id')}>ID {sortConfigCategory.key === 'id' ? (sortConfigCategory.direction === 'asc' ? '↑' : '↓') : ''}</TableHead>
+                    <TableHead onClick={() => handleSortCategory('name')}>Name {sortConfigCategory.key === 'name' ? (sortConfigCategory.direction === 'asc' ? '↑' : '↓') : ''}</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {sortedStorageCategories.map((category) => (
-                    <tr key={category.id} className="hover:bg-gray-100 transition">
-                      <td className="border p-2">{category.id}</td>
-                      <td className="border p-2">
+                    <TableRow key={category.id}>
+                      <TableCell>{category.id}</TableCell>
+                      <TableCell>
                         {editingStorageCategory?.id === category.id ? (
-                          <input
-                            type="text"
-                            value={editingStorageCategory.name}
-                            onChange={(e) => setEditingStorageCategory({ ...editingStorageCategory, name: e.target.value })}
-                            className="border p-1 rounded"
-                          />
+                          <Input value={editingStorageCategory.name} onChange={(e) => setEditingStorageCategory({ ...editingStorageCategory, name: e.target.value })} />
                         ) : (
                           category.name
                         )}
-                      </td>
-                      <td className="border p-2">
+                      </TableCell>
+                      <TableCell>
                         {editingStorageCategory?.id === category.id ? (
                           <>
-                            <button onClick={() => updateStorageCategory(category.id, editingStorageCategory)} className="bg-green-500 text-white px-2 py-1 rounded-lg hover:bg-green-600 transition">
+                            <Button onClick={() => updateStorageCategory(category.id, editingStorageCategory)} variant="success">
                               Save
-                            </button>
-                            <button onClick={() => setEditingStorageCategory(null)} className="bg-gray-500 text-white px-2 py-1 rounded-lg hover:bg-gray-600 transition ml-2">
+                            </Button>
+                            <Button onClick={() => setEditingStorageCategory(null)} variant="secondary" className="ml-2">
                               Cancel
-                            </button>
+                            </Button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => setEditingStorageCategory(category)} className="bg-orange-500 text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition">
+                            <Button onClick={() => setEditingStorageCategory(category)} variant="warning">
                               Modify
-                            </button>
-                            <button onClick={() => deleteStorageCategory(category.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition ml-2">
+                            </Button>
+                            <Button onClick={() => deleteStorageCategory(category.id)} variant="destructive" className="ml-2">
                               Delete
-                            </button>
+                            </Button>
                           </>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
 
