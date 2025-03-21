@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CardContent } from '@/components/ui/card'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
-const API_URL = 'http://localhost:5090/api/user' // Cập nhật URL phù hợp với API .NET của bạn
+const API_URL = 'http://localhost:5090/api/user'
 const API_ITEMS = 'http://localhost:5090/api/items'
 const API_LOT_REQUEST = 'http://localhost:5090/api/lot-request'
 const API_STORAGE = 'http://localhost:5090/api/storage'
@@ -258,55 +260,43 @@ const AdminDashboard = () => {
             <div className="p-6 flex-1 w-full overflow-auto bg-white rounded-lg shadow-md border border-gray-300">
               <h2 className="text-xl font-bold mb-4">User Management</h2>
 
-              {/* Form thêm người dùng */}
+              {/* Form to add new user */}
               <div className="mb-4 flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
-                />
-                <button onClick={createUser} className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                <Input placeholder="Name" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} className="w-1/3" />
+                <Input type="email" placeholder="Email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="w-1/3" />
+                <Button onClick={createUser} className="bg-primary text-white">
                   Add User
-                </button>
+                </Button>
               </div>
 
-              {/* Bảng danh sách người dùng */}
+              {/* User table */}
               {loading ? (
                 <p>Loading users...</p>
               ) : (
-                <table className="w-full border-collapse border border-gray-300 bg-white rounded-lg shadow">
-                  <thead>
-                    <tr className="bg-gray-200 text-left">
-                      <th className="border p-2">ID</th>
-                      <th className="border p-2">Name</th>
-                      <th className="border p-2">Email</th>
-                      <th className="border p-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-100 transition">
-                        <td className="border p-2">{user.id}</td>
-                        <td className="border p-2">{user.name}</td>
-                        <td className="border p-2">{user.email}</td>
-                        <td className="border p-2">
-                          <button onClick={() => deleteUser(user.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition">
+                      <TableRow key={user.id}>
+                        <TableCell>{user.id}</TableCell>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Button onClick={() => deleteUser(user.id)} className="bg-red-500 text-white">
                             Delete
-                          </button>
-                        </td>
-                      </tr>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               )}
             </div>
           )}
@@ -375,126 +365,120 @@ const AdminDashboard = () => {
             <div className="p-6 flex-1 w-full overflow-auto bg-white rounded-lg shadow-md border border-gray-300">
               <h2 className="text-xl font-bold mb-4">Storage Management</h2>
 
-              {/* Form to add new storage */}
               <div className="mb-4 flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Storage Name"
-                  value={newStorage.name}
-                  onChange={(e) => setNewStorage({ ...newStorage, name: e.target.value })}
-                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
-                />
-                <select
-                  value={newStorage.storageCategoryId}
-                  onChange={(e) => setNewStorage({ ...newStorage, storageCategoryId: parseInt(e.target.value) })}
-                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
-                >
-                  <option value={0} disabled>
-                    Select Category
-                  </option>
-                  {storageCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={newStorage.isActive}
-                  onChange={(e) => setNewStorage({ ...newStorage, isActive: e.target.value === 'true' })}
-                  className="border p-2 rounded-lg w-1/3 focus:ring-2 focus:ring-blue-400"
-                >
-                  <option value="true">Active</option>
-                  <option value="false">Inactive</option>
-                </select>
-                <button onClick={createStorage} className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                <Input placeholder="Storage Name" value={newStorage.name} onChange={(e) => setNewStorage({ ...newStorage, name: e.target.value })} className="w-1/3" />
+                <Select value={newStorage.storageCategoryId.toString()} onValueChange={(value) => setNewStorage({ ...newStorage, storageCategoryId: parseInt(value) })}>
+                  <SelectTrigger className="w-1/3">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {storageCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={newStorage.isActive.toString()} onValueChange={(value) => setNewStorage({ ...newStorage, isActive: value === 'true' })}>
+                  <SelectTrigger className="w-1/3">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Active</SelectItem>
+                    <SelectItem value="false">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={createStorage} variant="default">
                   Add Storage
-                </button>
+                </Button>
               </div>
 
               {/* Storage table */}
-              <table className="w-full border-collapse border border-gray-300 bg-white rounded-lg shadow">
-                <thead>
-                  <tr className="bg-gray-200 text-left">
-                    <th className="border p-2 cursor-pointer" onClick={() => handleSort('id')}>
-                      ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                    </th>
-                    <th className="border p-2 cursor-pointer" onClick={() => handleSort('name')}>
-                      Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                    </th>
-                    <th className="border p-2 cursor-pointer" onClick={() => handleSort('storageCategoryName')}>
-                      Category {sortConfig.key === 'storageCategoryName' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                    </th>
-                    <th className="border p-2 cursor-pointer" onClick={() => handleSort('isActive')}>
-                      Status {sortConfig.key === 'isActive' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                    </th>
-                    <th className="border p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead onClick={() => handleSort('id')}>ID {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</TableHead>
+                    <TableHead onClick={() => handleSort('name')}>Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</TableHead>
+                    <TableHead onClick={() => handleSort('storageCategoryName')}>Category {sortConfig.key === 'storageCategoryName' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</TableHead>
+                    <TableHead onClick={() => handleSort('isActive')}>Status {sortConfig.key === 'isActive' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {sortedStorages.map((storage) => (
-                    <tr key={storage.id} className="hover:bg-gray-100 transition">
-                      <td className="border p-2">{storage.id}</td>
-                      <td className="border p-2">
+                    <TableRow key={storage.id}>
+                      <TableCell>{storage.id}</TableCell>
+                      <TableCell>
+                        {editingStorage?.id === storage.id ? <Input value={editingStorage.name} onChange={(e) => setEditingStorage({ ...editingStorage, name: e.target.value })} /> : storage.name}
+                      </TableCell>
+                      <TableCell>
                         {editingStorage?.id === storage.id ? (
-                          <input type="text" value={editingStorage.name} onChange={(e) => setEditingStorage({ ...editingStorage, name: e.target.value })} className="border p-1 rounded" />
-                        ) : (
-                          storage.name
-                        )}
-                      </td>
-                      <td className="border p-2">
-                        {editingStorage?.id === storage.id ? (
-                          <select
-                            value={editingStorage.storageCategoryId}
-                            onChange={(e) => setEditingStorage({ ...editingStorage, storageCategoryId: parseInt(e.target.value) })}
-                            className="border p-1 rounded"
-                          >
-                            {storageCategories.map((category) => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
+                          <Select value={editingStorage.storageCategoryId.toString()} onValueChange={(value) => setEditingStorage({ ...editingStorage, storageCategoryId: parseInt(value) })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {storageCategories.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           storage.storageCategoryName
                         )}
-                      </td>
-                      <td className="border p-2">
+                      </TableCell>
+                      <TableCell>
                         {editingStorage?.id === storage.id ? (
-                          <select value={editingStorage.isActive} onChange={(e) => setEditingStorage({ ...editingStorage, isActive: e.target.value === 'true' })} className="border p-1 rounded">
-                            <option value="true">Active</option>
-                            <option value="false">Inactive</option>
-                          </select>
+                          <Select value={editingStorage.isActive.toString()} onValueChange={(value) => setEditingStorage({ ...editingStorage, isActive: value === 'true' })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">Active</SelectItem>
+                              <SelectItem value="false">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
                         ) : storage.isActive ? (
                           <span className="text-green-600 font-bold">Active</span>
                         ) : (
                           <span className="text-red-600 font-bold">Inactive</span>
                         )}
-                      </td>
-                      <td className="border p-2">
+                      </TableCell>
+                      <TableCell>
                         {editingStorage?.id === storage.id ? (
                           <>
-                            <button onClick={() => updateStorage(storage.id, editingStorage)} className="bg-green-500 text-white px-2 py-1 rounded-lg hover:bg-green-600 transition">
+                            <Button onClick={() => updateStorage(storage.id, editingStorage)} variant="success">
                               Save
-                            </button>
-                            <button onClick={() => setEditingStorage(null)} className="bg-gray-500 text-white px-2 py-1 rounded-lg hover:bg-gray-600 transition ml-2">
+                            </Button>
+                            <Button onClick={() => setEditingStorage(null)} variant="secondary" className="ml-2">
                               Cancel
-                            </button>
+                            </Button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => setEditingStorage(storage)} className="bg-orange-500 text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition">
+                            <Button
+                              onClick={() =>
+                                setEditingStorage({
+                                  ...storage,
+                                  storageCategoryId: storage.storageCategoryId || 0,
+                                })
+                              }
+                              variant="warning"
+                            >
                               Modify
-                            </button>
-                            <button onClick={() => deleteStorage(storage.id)} className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition ml-2">
+                            </Button>
+                            <Button onClick={() => deleteStorage(storage.id)} variant="destructive" className="ml-2">
                               Delete
-                            </button>
+                            </Button>
                           </>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
 
