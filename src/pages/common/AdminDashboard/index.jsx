@@ -24,7 +24,7 @@ const AdminDashboard = () => {
   const [items, setItems] = useState([])
   const [lots, setLots] = useState([])
   const [storages, setStorages] = useState([])
-  const [newStorage, setNewStorage] = useState({ name: '', storageCategoryId: 0, isActive: true })
+  const [newStorage, setNewStorage] = useState({ name: '', storageCategoryId: 1, isActive: true })
   const [storageCategories, setStorageCategories] = useState([])
   const [editingStorage, setEditingStorage] = useState(null)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
@@ -462,7 +462,7 @@ const AdminDashboard = () => {
                               onClick={() =>
                                 setEditingStorage({
                                   ...storage,
-                                  storageCategoryId: storage.storageCategoryId || 0,
+                                  storageCategoryId: storage.storageCategoryId || storageCategories.find((cat) => cat.name === storage.storageCategoryName)?.id || 0,
                                 })
                               }
                               variant="warning"
