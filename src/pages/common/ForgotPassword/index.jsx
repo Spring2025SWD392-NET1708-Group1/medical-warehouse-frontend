@@ -22,6 +22,7 @@ const ForgotPassword = ({
     const navigate = useNavigate();
 
     const handleReset = () => {
+        console.log("Navigating to /update-password..."); // Kiểm tra event có chạy không
         navigate("/update-password");
     };
     return (
